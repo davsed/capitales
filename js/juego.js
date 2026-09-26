@@ -91,8 +91,8 @@
   function pintarTablero(el, texto, { anchoMax = 46, conSonido = true, unaLinea = false } = {}) {
     const palabras = texto.toUpperCase().split(/\s+/).filter(Boolean);
     const larga = unaLinea ? Math.max(texto.length + 0.5 * (palabras.length - 1), 8) : Math.max(...palabras.map((w) => w.length), 6);
-    const disponible = (el.clientWidth || 600) - 36;
-    const ancho = Math.max(14, Math.min(anchoMax, Math.floor(disponible / (larga + 0.6)) - 3));
+    const disponible = (el.clientWidth || 600) - (unaLinea ? 0 : 36);
+    const ancho = Math.max(unaLinea ? 8 : 14, Math.min(anchoMax, Math.floor(disponible / (larga + 0.6)) - 3));
     el.style.setProperty("--ficha-w", ancho + "px");
     el.textContent = "";
     el.setAttribute("aria-label", texto);
@@ -398,7 +398,8 @@
         caja.appendChild(fila);
       }
     }
-    const elegidos = barajar(PAISES.filter((p) => !p.limitado && p.pais.length <= 11 && p.capital.length <= 11)).slice(0, 3);
+    const largo = caja.clientWidth && caja.clientWidth < 330 ? 8 : 11; // en móviles estrechos, nombres cortos
+    const elegidos = barajar(PAISES.filter((p) => !p.limitado && p.pais.length <= largo && p.capital.length <= largo)).slice(0, 3);
     [...caja.children].forEach((fila, i) => {
       const [a, b] = fila.children;
       setTimeout(() => {
@@ -416,12 +417,12 @@
   /* ------------------------------------------------------------------
      Pantallas
      ------------------------------------------------------------------ */
-  const pantallas = ["inicio", "juego", "final", "tabla"];
+  const pantallas = ["inicio", "juego", "final", "tabla", "muro"];
+  const NAV = { tabla: "#nav-tabla", muro: "#nav-muro" };
   function mostrarPantalla(nombre) {
     for (const p of pantallas) $("#pantalla-" + p).hidden = p !== nombre;
-    const enTabla = nombre === "tabla";
-    $(enTabla ? "#nav-tabla" : "#nav-jugar").setAttribute("aria-current", "page");
-    $(enTabla ? "#nav-jugar" : "#nav-tabla").removeAttribute("aria-current");
+    for (const sel of ["#nav-jugar", "#nav-tabla", "#nav-muro"]) $(sel).removeAttribute("aria-current");
+    $(NAV[nombre] || "#nav-jugar").setAttribute("aria-current", "page");
     if (nombre === "inicio") iniciarDemo(); else clearInterval(temporizadorDemo);
     window.scrollTo({ top: 0, behavior: movimientoReducido ? "auto" : "smooth" });
   }
@@ -440,9 +441,14 @@
     const preguntas = barajar(pool).slice(0, n).map((p) => ({
       p, dir: ajustes.dir === "mix" ? (Math.random() < 0.5 ? "pc" : "cp") : ajustes.dir,
     }));
+    const todas = ajustes.conts.length === Object.keys(CONTINENTES).length;
     ronda = {
       preguntas, i: 0, aciertos: 0, fallos: 0, racha: 0, mejorRacha: 0, puntos: 0,
-      inicio: performance.now(), historial: [], respondida: false, pista: 0, repaso,
+      inicio: performance.now(), historial: [], respondida: false, pista: 0, repaso, abandonada: false,
+      modalidad: {
+        dir: ajustes.dir, modo: ajustes.modo, limite: ajustes.tiempo,
+        zona: todas ? "todo" : Object.keys(CONTINENTES).filter((c) => ajustes.conts.includes(c)).join("+"),
+      },
     };
     promesaFotos = precargarFotos(preguntas.map((q) => q.p.wiki));
     mostrarPantalla("juego");
@@ -772,6 +778,7 @@
     if (!ronda.historial.length) { clearInterval(temporizadorReloj); clearInterval(temporizadorCrono); mostrarPantalla("inicio"); return; }
     ronda.preguntas = ronda.preguntas.slice(0, ronda.historial.length);
     ronda.respondida = true;
+    ronda.abandonada = true;
     terminar();
   });
   $("#btn-pista").addEventListener("click", () => {
@@ -849,6 +856,12 @@
     }
     $("#caja-fallos").hidden = !fallos.length;
     $("#btn-repetir-fallos").hidden = !fallos.length;
+    // Solo las rondas completas (ni repasos ni rondas terminadas antes de tiempo) van al muro.
+    window.Muro.alTerminar({
+      publicable: !r.repaso && !r.abandonada && total > 0,
+      ...r.modalidad, puntos: r.puntos, aciertos: r.aciertos, preguntas: total,
+      segundos: Math.max(1, Math.round(tiempo / 1000)),
+    });
     mostrarPantalla("final");
     if (pct >= 80 || nuevoRecord) { confeti(160); sonido.fanfarria(); }
   }
@@ -964,16 +977,24 @@
   }
   $("#btn-marca").addEventListener("click", irAInicio);
   $("#nav-jugar").addEventListener("click", irAInicio);
-  $("#nav-tabla").addEventListener("click", () => {
+  function detenerRonda() {
     clearInterval(temporizadorReloj);
     clearInterval(temporizadorCrono);
     clearTimeout(temporizadorSiguiente);
+  }
+  $("#nav-tabla").addEventListener("click", () => {
+    detenerRonda();
     ronda = null;
     pintarChipsTabla();
     pintarTabla();
     mostrarPantalla("tabla");
     $("#buscar").focus({ preventScroll: true });
   });
+  $("#nav-muro").addEventListener("click", () => {
+    if (!$("#pantalla-juego").hidden) { detenerRonda(); ronda = null; }
+    window.Muro.abrir();
+  });
+  window.JUEGO = { mostrarPantalla };
   const botonSonido = $("#btn-sonido");
   function pintarBotonSonido() {
     botonSonido.setAttribute("aria-pressed", String(sonido.activo));
@@ -990,5 +1011,6 @@
   pintarBotonSonido();
   refrescarOpciones();
   if (location.hash === "#tabla") $("#nav-tabla").click();
+  else if (location.hash === "#muro" && window.Muro.activo) window.Muro.abrir();
   else mostrarPantalla("inicio");
 })();

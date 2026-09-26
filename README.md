@@ -18,6 +18,7 @@ Juego de capitales del mundo en español. Se pregunta un país al azar y escribe
 - **Animaciones**: el nombre aparece letra a letra como en un panel de aeropuerto, con sellos de pasaporte al acertar o fallar, confeti con las rachas, un avión que avanza por la ronda y sonidos, que se pueden silenciar.
 - **Al final** tienes el resumen, un «pasaporte» con las banderas de la ronda, la lista de fallos y un botón para repetir solo los fallos.
 - **Tabla ⇄**: la tabla clave-valor bidireccional completa. Busca un país y te da su capital; busca una capital y te da su país.
+- **Muro público**: al terminar una ronda puedes publicar tu resultado con un apodo. El muro muestra un ranking de los mejores, con la modalidad de cada partida (qué se pregunta, cómo se responde, número de preguntas, continentes y tiempo), y se puede filtrar por modalidad.
 
 ## Datos
 
@@ -46,6 +47,16 @@ npm run datos          # descarga las fuentes, contrasta, y genera js/datos.js, 
 npm test               # pruebas de los datos y de la corrección de respuestas
 ```
 
+## Muro de resultados
+
+Los resultados se guardan en [Supabase](https://supabase.com) (plan gratuito), porque GitHub Pages no puede guardar datos. Para activarlo:
+
+1. Crea un proyecto en Supabase.
+2. En **SQL Editor** ejecuta [`data/muro.sql`](data/muro.sql). Crea la tabla y deja que cualquiera lea el muro y añada resultados, pero no que modifique ni borre los existentes.
+3. Copia la *Project URL* y la clave *anon* o *publishable* en [`js/muro-config.js`](js/muro-config.js). Esa clave es pública por diseño.
+
+Mientras `js/muro-config.js` esté vacío, el muro no aparece en el juego. Solo se publican rondas completas (no los repasos ni las rondas terminadas antes de tiempo). Los nombres tienen como máximo 20 caracteres y pasan un filtro básico de insultos. Para borrar una entrada, usa el *Table Editor* de Supabase.
+
 ## Estructura
 
 | Ruta | Contenido |
@@ -55,6 +66,7 @@ npm test               # pruebas de los datos y de la corrección de respuestas
 | `img/` | Icono e imagen para compartir en redes |
 | `js/tabla.js` | Tabla bidireccional país ⇄ capital y corrección de respuestas |
 | `js/juego.js` | Lógica del juego, animaciones, mapa y fotos |
+| `js/muro.js`, `js/muro-config.js`, `data/muro.sql` | Muro público de resultados (Supabase) |
 | `js/datos.js`, `js/mapa.js` | Generados: países y mapamundi |
 | `data/` | Tabla curada, dataset en JSON e informe de fuentes |
 | `scripts/` | Scripts que construyen los datos |

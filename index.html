@@ -43,6 +43,7 @@
   <nav class="nav" aria-label="Secciones">
     <button type="button" class="nav-btn" id="nav-jugar" aria-current="page">Jugar</button>
     <button type="button" class="nav-btn" id="nav-tabla">Tabla</button>
+    <button type="button" class="nav-btn" id="nav-muro" hidden>Muro</button>
     <button type="button" class="icono-btn" id="btn-sonido" aria-pressed="true" aria-label="Sonido activado" title="Sonido">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="onda" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="mute" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
@@ -221,6 +222,24 @@
       <div class="cifra"><strong id="f-racha">0</strong><span>mejor racha</span></div>
       <div class="cifra"><strong id="f-tiempo">0:00</strong><span>tiempo total</span></div>
     </div>
+    <div class="publicar" id="caja-publicar" hidden>
+      <div class="publicar-texto">
+        <h3>Muro de resultados</h3>
+        <p class="publicar-modalidad" id="publicar-modalidad"></p>
+      </div>
+      <form id="form-publicar" class="publicar-form" novalidate>
+        <label for="nombre-muro">Tu nombre o apodo</label>
+        <div class="campo">
+          <input id="nombre-muro" name="nombre" type="text" maxlength="20" autocomplete="nickname" spellcheck="false" placeholder="p. ej. Trotamundos23">
+          <button type="submit" class="btn-principal" id="btn-publicar">Publicar</button>
+        </div>
+        <p class="ayuda" id="publicar-estado" aria-live="polite">Se verá en público: mejor un apodo que tu nombre completo.</p>
+      </form>
+      <div class="publicado" id="publicado" hidden>
+        <p id="publicado-texto" aria-live="polite">¡Publicado!</p>
+        <button type="button" class="btn-secundario" id="btn-ver-muro">Ver el muro</button>
+      </div>
+    </div>
     <div class="pasaporte">
       <h3>Sellos del pasaporte</h3>
       <div class="sellos" id="sellos"></div>
@@ -233,6 +252,52 @@
       <button type="button" class="btn-principal" id="btn-repetir-fallos">Repetir los fallos</button>
       <button type="button" class="btn-secundario" id="btn-otra">Otra ronda igual</button>
       <button type="button" class="btn-secundario" id="btn-opciones">Cambiar opciones</button>
+    </div>
+  </section>
+
+  <!-- ============ MURO ============ -->
+  <section id="pantalla-muro" class="pantalla" hidden>
+    <div class="muro-cabecera">
+      <p class="antetitulo">Ranking público</p>
+      <h2 class="titular pequeno">Muro de resultados</h2>
+      <p class="ayuda">Termina una ronda y publica tu puntuación con tu apodo. Aquí salen las mejores de cada modalidad.</p>
+    </div>
+    <div class="muro-filtros">
+      <label for="filtro-preguntas"><span>Preguntas</span>
+        <select id="filtro-preguntas">
+          <option value="">Cualquier número</option>
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="otras">Todas las del grupo</option>
+        </select>
+      </label>
+      <label for="filtro-dir"><span>Qué se pregunta</span>
+        <select id="filtro-dir">
+          <option value="">Cualquiera</option>
+          <option value="pc">País → capital</option>
+          <option value="cp">Capital → país</option>
+          <option value="mix">Mezcla</option>
+        </select>
+      </label>
+      <label for="filtro-modo"><span>Cómo se responde</span>
+        <select id="filtro-modo">
+          <option value="">Cualquiera</option>
+          <option value="escribir">Escribiendo</option>
+          <option value="opciones">4 opciones</option>
+        </select>
+      </label>
+    </div>
+    <div class="muro-cuerpo">
+      <div class="muro-ranking">
+        <ol class="ranking" id="ranking"></ol>
+        <p class="muro-estado" id="muro-estado" aria-live="polite"></p>
+      </div>
+      <aside class="ultimos" id="caja-ultimos" hidden>
+        <h3>Últimos publicados</h3>
+        <ul id="ultimos"></ul>
+      </aside>
     </div>
   </section>
 
@@ -278,6 +343,8 @@
 <script src="js/datos.js"></script>
 <script src="js/mapa.js"></script>
 <script src="js/tabla.js"></script>
+<script src="js/muro-config.js"></script>
+<script src="js/muro.js"></script>
 <script src="js/juego.js"></script>
 </body>
 </html>
