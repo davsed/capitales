@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Capitales del Mundo</title>
+<meta name="description" content="Juego de capitales del mundo: 197 países con capitales contrastadas en cinco fuentes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<!--CONTENIDO-->
+<header class="barra">
+  <button type="button" class="marca" id="btn-marca" aria-label="Volver al inicio">
+    <svg viewBox="0 0 32 32" aria-hidden="true" class="marca-globo">
+      <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/>
+      <ellipse cx="16" cy="16" rx="5.5" ry="13" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M3.5 12h25M3.5 20h25" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+    <span>Capitales</span>
+  </button>
+  <nav class="nav" aria-label="Secciones">
+    <button type="button" class="nav-btn" id="nav-jugar" aria-current="page">Jugar</button>
+    <button type="button" class="nav-btn" id="nav-tabla">Tabla</button>
+    <button type="button" class="icono-btn" id="btn-sonido" aria-pressed="true" aria-label="Sonido activado" title="Sonido">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="onda" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="mute" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </nav>
+</header>
+
+<main class="contenedor">
+
+  <!-- ============ INICIO / OPCIONES ============ -->
+  <section id="pantalla-inicio" class="pantalla">
+    <div class="portada">
+      <p class="antetitulo"><span id="total-paises">197</span> países · capitales contrastadas en 5 fuentes</p>
+      <h1 class="titular">¿Cuál es la capital de…?</h1>
+      <div class="panel-salidas" aria-hidden="true">
+        <div class="panel-cabecera"><span>Destino</span><span>Capital</span></div>
+        <div class="panel-filas" id="panel-demo"></div>
+      </div>
+      <ul class="avisos">
+        <li><span class="marca-aviso nuevo">2026</span><span><b>Guinea Ecuatorial estrena capital:</b> desde enero es Ciudad de la Paz, no Malabo.</span></li>
+        <li><span class="marca-aviso">Dudas</span><span>Si un país tiene varias capitales (Bolivia, Sudáfrica…) se aceptan todas, y al responder te contamos por qué.</span></li>
+        <li><span class="marca-aviso">Teclas</span><span>Intro para comprobar y seguir; 1–4 para elegir en el modo de opciones.</span></li>
+      </ul>
+    </div>
+
+    <form id="form-opciones" class="billete" novalidate>
+      <div class="billete-cuerpo">
+        <fieldset class="grupo">
+          <legend>Continentes</legend>
+          <div class="chips" id="chips-continentes"></div>
+          <p class="ayuda" id="resumen-pool">197 países seleccionados</p>
+        </fieldset>
+
+        <fieldset class="grupo">
+          <legend>Preguntas por ronda</legend>
+          <div class="segmentado" id="seg-n">
+            <label><input type="radio" name="n" value="10" id="n-10" checked><span>10</span></label>
+            <label><input type="radio" name="n" value="25" id="n-25"><span>25</span></label>
+            <label><input type="radio" name="n" value="50" id="n-50"><span>50</span></label>
+            <label><input type="radio" name="n" value="100" id="n-100"><span>100</span></label>
+            <label><input type="radio" name="n" value="0" id="n-todas"><span>Todas</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="grupo">
+          <legend>¿Qué te preguntamos?</legend>
+          <div class="segmentado ancho" id="seg-dir">
+            <label><input type="radio" name="dir" value="pc" id="dir-pc" checked><span>País <b>→</b> capital</span></label>
+            <label><input type="radio" name="dir" value="cp" id="dir-cp"><span>Capital <b>→</b> país</span></label>
+            <label><input type="radio" name="dir" value="mix" id="dir-mix"><span>Mezcla</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="grupo">
+          <legend>Cómo respondes</legend>
+          <div class="segmentado ancho" id="seg-modo">
+            <label><input type="radio" name="modo" value="escribir" id="modo-escribir" checked><span>Escribiendo</span></label>
+            <label><input type="radio" name="modo" value="opciones" id="modo-opciones"><span>4 opciones</span></label>
+          </div>
+        </fieldset>
+
+        <details class="mas-opciones" id="mas-opciones">
+          <summary>Más opciones</summary>
+          <div class="ajustes-extra">
+            <label class="ajuste" for="sel-tiempo">
+              <span>Tiempo por pregunta</span>
+              <select id="sel-tiempo" name="tiempo">
+                <option value="0">Sin límite</option>
+                <option value="10">10 segundos</option>
+                <option value="20">20 segundos</option>
+                <option value="30">30 segundos</option>
+              </select>
+            </label>
+            <label class="ajuste interruptor" for="chk-erratas">
+              <span>Perdonar erratas leves<small>«Budapes» cuenta como «Budapest»</small></span>
+              <input type="checkbox" id="chk-erratas" name="erratas" checked>
+            </label>
+            <label class="ajuste interruptor" for="chk-auto">
+              <span>Pasar solo a la siguiente<small>Tras unos segundos; pulsa Intro para ir antes</small></span>
+              <input type="checkbox" id="chk-auto" name="auto" checked>
+            </label>
+            <label class="ajuste interruptor" for="chk-taiwan">
+              <span>Incluir Taiwán<small>Reconocimiento internacional limitado</small></span>
+              <input type="checkbox" id="chk-taiwan" name="taiwan">
+            </label>
+          </div>
+        </details>
+      </div>
+
+      <div class="billete-talon">
+        <div class="talon-dato"><span>Pasajero</span><strong id="talon-modo">País → capital</strong></div>
+        <div class="talon-dato"><span>Paradas</span><strong id="talon-n">10</strong></div>
+        <div class="talon-dato" id="talon-record-caja"><span>Tu récord</span><strong id="talon-record">—</strong></div>
+        <button type="submit" class="btn-principal" id="btn-empezar">Empezar ronda</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ============ JUEGO ============ -->
+  <section id="pantalla-juego" class="pantalla" hidden>
+    <div class="hud">
+      <div class="ruta" aria-hidden="true">
+        <div class="ruta-linea"><div class="ruta-hecha" id="ruta-hecha"></div></div>
+        <svg class="avion" id="avion" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor"/></svg>
+      </div>
+      <div class="marcador">
+        <div class="dato-hud"><span>Pregunta</span><strong><b id="hud-i">1</b>/<span id="hud-n">10</span></strong></div>
+        <div class="dato-hud ok"><span>Aciertos</span><strong id="hud-aciertos">0</strong></div>
+        <div class="dato-hud mal"><span>Fallos</span><strong id="hud-fallos">0</strong></div>
+        <div class="dato-hud racha" id="hud-racha-caja"><span>Racha</span><strong id="hud-racha">0</strong></div>
+        <div class="dato-hud"><span>Puntos</span><strong id="hud-puntos">0</strong></div>
+        <div class="dato-hud"><span>Tiempo</span><strong id="hud-tiempo">0:00</strong></div>
+      </div>
+    </div>
+
+    <div class="escena">
+      <div class="pregunta" id="caja-pregunta">
+        <div class="pregunta-cabecera">
+          <span class="etiqueta-tipo" id="etiqueta-tipo">País</span>
+          <p class="instruccion" id="instruccion">Escribe su capital</p>
+          <div class="reloj" id="reloj" hidden><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" class="reloj-fondo"/><circle cx="18" cy="18" r="15.5" class="reloj-arco" id="reloj-arco"/></svg><span id="reloj-num">20</span></div>
+        </div>
+        <div class="fila-tablero">
+          <img class="bandera-pregunta" id="bandera-pregunta" alt="" hidden>
+          <div class="tablero" id="tablero" role="heading" aria-level="2"></div>
+        </div>
+        <div class="sello" id="sello" hidden><span id="sello-texto">Correcto</span></div>
+      </div>
+
+      <form id="form-respuesta" class="respuesta" autocomplete="off" novalidate>
+        <label for="entrada" class="solo-lector" id="entrada-etiqueta">Tu respuesta</label>
+        <div class="campo">
+          <input id="entrada" name="entrada" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Escribe la capital…" enterkeyhint="send">
+          <button type="submit" class="btn-principal" id="btn-comprobar">Comprobar</button>
+        </div>
+        <p class="pista" id="texto-pista" hidden></p>
+      </form>
+
+      <div class="opciones4" id="opciones4" hidden></div>
+
+      <div class="acciones-secundarias" id="acciones-pregunta">
+        <button type="button" class="btn-texto" id="btn-pista">Pista <small>(−50 %)</small></button>
+        <button type="button" class="btn-texto" id="btn-pasar">Pasar</button>
+        <button type="button" class="btn-texto" id="btn-abandonar">Terminar ronda</button>
+      </div>
+
+      <div class="revelado" id="revelado" hidden>
+        <div class="veredicto" id="veredicto" aria-live="polite"></div>
+        <div class="postal">
+          <figure class="foto" id="foto">
+            <div class="foto-marco"><img id="foto-img" alt=""></div>
+            <figcaption id="foto-pie"></figcaption>
+          </figure>
+          <div class="minimapa" id="minimapa">
+            <svg id="mapa" viewBox="0 0 1000 520" role="img" aria-label="Mapa de situación"></svg>
+            <p class="mapa-pie" id="mapa-pie"></p>
+          </div>
+        </div>
+        <div class="siguiente-fila">
+          <p class="pausa" id="pausa-aviso" hidden>Pausado. Pulsa «Siguiente» cuando quieras.</p>
+          <button type="button" class="btn-principal btn-siguiente" id="btn-siguiente"><span>Siguiente</span><i class="cuenta-atras" id="cuenta-atras"></i></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL ============ -->
+  <section id="pantalla-final" class="pantalla" hidden>
+    <div class="final-cabecera">
+      <p class="antetitulo" id="final-antetitulo">Ronda terminada</p>
+      <h2 class="titular" id="final-titulo">Viajero frecuente</h2>
+      <p class="final-record" id="final-record" hidden>Nuevo récord con estas opciones</p>
+    </div>
+    <div class="final-cifras">
+      <div class="cifra"><strong id="f-puntos">0</strong><span>puntos</span></div>
+      <div class="cifra"><strong id="f-aciertos">0/0</strong><span id="f-pct">0 % de aciertos</span></div>
+      <div class="cifra"><strong id="f-racha">0</strong><span>mejor racha</span></div>
+      <div class="cifra"><strong id="f-tiempo">0:00</strong><span>tiempo total</span></div>
+    </div>
+    <div class="pasaporte">
+      <h3>Sellos del pasaporte</h3>
+      <div class="sellos" id="sellos"></div>
+    </div>
+    <div class="fallos" id="caja-fallos">
+      <h3>Para repasar</h3>
+      <ul id="lista-fallos"></ul>
+    </div>
+    <div class="final-acciones">
+      <button type="button" class="btn-principal" id="btn-repetir-fallos">Repetir los fallos</button>
+      <button type="button" class="btn-secundario" id="btn-otra">Otra ronda igual</button>
+      <button type="button" class="btn-secundario" id="btn-opciones">Cambiar opciones</button>
+    </div>
+  </section>
+
+  <!-- ============ TABLA ============ -->
+  <section id="pantalla-tabla" class="pantalla" hidden>
+    <div class="tabla-cabecera">
+      <h2 class="titular pequeno">País ⇄ capital</h2>
+      <p class="ayuda">La tabla funciona en los dos sentidos: busca un país y verás su capital, busca una capital y verás su país.</p>
+    </div>
+    <div class="buscador">
+      <label for="buscar" class="solo-lector">Buscar país o capital</label>
+      <input id="buscar" type="search" placeholder="Busca «Canberra» o «Australia»…" autocomplete="off" spellcheck="false">
+      <p class="respuesta-directa" id="respuesta-directa" aria-live="polite"></p>
+    </div>
+    <div class="chips" id="chips-tabla"></div>
+    <div class="tabla-envoltura">
+      <table class="tabla" id="tabla">
+        <thead>
+          <tr>
+            <th scope="col" class="col-bandera"><span class="solo-lector">Bandera</span></th>
+            <th scope="col"><button type="button" class="orden" data-orden="pais" id="orden-pais">País</button></th>
+            <th scope="col"><button type="button" class="orden" data-orden="capital" id="orden-capital">Capital</button></th>
+            <th scope="col" class="col-cont">Continente</th>
+            <th scope="col" class="col-fuentes" title="Fuentes que coinciden con la capital elegida">Fuentes</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-cuerpo"></tbody>
+      </table>
+    </div>
+    <p class="ayuda pie-tabla">Fuentes: mledoze/countries, CIA World Factbook, GeoNames, annexare/Countries y REST Countries, más prensa de 2026 para los cambios recientes. Grafía según la RAE y la FundéuRAE. Banderas: flag-icons (MIT). Mapa: Natural Earth. Fotos: Wikimedia Commons.</p>
+  </section>
+</main>
+
+<div class="solo-lector" aria-live="assertive" id="anuncio"></div>
+<canvas id="confeti" aria-hidden="true"></canvas>
+<!--/CONTENIDO-->
+<script src="js/datos.js"></script>
+<script src="js/mapa.js"></script>
+<script src="js/tabla.js"></script>
+<script src="js/juego.js"></script>
+</body>
+</html>

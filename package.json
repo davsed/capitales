@@ -1,0 +1,16 @@
+{
+  "name": "capitales",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Juego de capitales del mundo",
+  "scripts": {
+    "datos": "python3 scripts/construir_datos.py && node scripts/construir_mapa.mjs && node scripts/copiar_banderas.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "d3-geo": "^3.1.1",
+    "flag-icons": "^7.5.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  }
+}

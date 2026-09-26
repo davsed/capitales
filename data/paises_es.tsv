@@ -1,0 +1,203 @@
+# Tabla curada país ⇄ capital en español.
+# Columnas: iso2 · país · capital · alternativas de país (;) · alternativas de capital (;) · continente · artículo de Wikipedia (en) de la capital · nota
+# Continentes: AF África · NC América del Norte y Central · CB Caribe · SA América del Sur · AS Asia · EU Europa · OC Oceanía
+# Nombres según la Ortografía de la RAE (2010, apéndice de países y capitales) y las recomendaciones de la FundéuRAE.
+# Las capitales se contrastan con scripts/construir_datos.py contra 5 fuentes (ver data/informe-fuentes.md).
+iso2	pais	capital	pais_alt	capital_alt	cont	wiki	nota
+AD	Andorra	Andorra la Vieja		Andorra la Vella	EU	Andorra la Vella
+AE	Emiratos Árabes Unidos	Abu Dabi	EAU;Emiratos	Abu Dhabi	AS	Abu Dhabi
+AF	Afganistán	Kabul	Afganistan		AS	Kabul
+AG	Antigua y Barbuda	Saint John's		San Juan;St. John's;Saint Johns	CB	St. John's, Antigua and Barbuda
+AL	Albania	Tirana		Tirane	EU	Tirana
+AM	Armenia	Ereván		Yerevan;Everán	AS	Yerevan
+AO	Angola	Luanda			AF	Luanda
+AR	Argentina	Buenos Aires			SA	Buenos Aires
+AT	Austria	Viena		Vienna;Wien	EU	Vienna
+AU	Australia	Canberra			OC	Canberra
+AZ	Azerbaiyán	Bakú	Azerbaijan	Baku	AS	Baku
+BA	Bosnia y Herzegovina	Sarajevo	Bosnia-Herzegovina;Bosnia		EU	Sarajevo
+BB	Barbados	Bridgetown			CB	Bridgetown
+BD	Bangladés	Daca	Bangladesh	Dhaka;Dacca	AS	Dhaka
+BE	Bélgica	Bruselas		Brussels;Bruxelles	EU	Brussels
+BF	Burkina Faso	Uagadugú		Ouagadougou	AF	Ouagadougou
+BG	Bulgaria	Sofía		Sofia	EU	Sofia
+BH	Baréin	Manama	Bahréin;Bahrein;Bahrain		AS	Manama
+BI	Burundi	Gitega			AF	Gitega	Gitega es la capital política desde 2019; Buyumbura sigue siendo la capital económica.
+BJ	Benín	Porto Novo	Benin	Porto-Novo;Portonovo	AF	Porto-Novo	Porto Novo es la capital oficial; la sede del Gobierno está en Cotonú.
+BN	Brunéi	Bandar Seri Begawan	Brunei		AS	Bandar Seri Begawan
+BO	Bolivia	Sucre		La Paz	SA	Sucre	Sucre es la capital constitucional; La Paz es la sede del Gobierno (también se acepta).
+BR	Brasil	Brasilia		Brasília	SA	Brasília
+BS	Bahamas	Nasáu	Las Bahamas	Nassau	CB	Nassau, Bahamas
+BT	Bután	Timbu	Butan	Thimphu;Thimbu	AS	Thimphu
+BW	Botsuana	Gaborone	Botswana		AF	Gaborone
+BY	Bielorrusia	Minsk	Belarús;Belarus		EU	Minsk
+BZ	Belice	Belmopán		Belmopan	NC	Belmopan
+CA	Canadá	Ottawa		Otawa	NC	Ottawa
+CD	República Democrática del Congo	Kinsasa	RD Congo;RDC;Congo-Kinsasa;Congo Kinsasa	Kinshasa	AF	Kinshasa
+CF	República Centroafricana	Bangui	Centroáfrica		AF	Bangui
+CG	República del Congo	Brazzaville	Congo;Congo-Brazzaville;Congo Brazzaville	Brazavile	AF	Brazzaville
+CH	Suiza	Berna		Bern;Berne	EU	Bern	Berna es oficialmente la «ciudad federal»: Suiza no designa capital en su Constitución.
+CI	Costa de Marfil	Yamusukro	Côte d'Ivoire	Yamoussoukro	AF	Yamoussoukro	Yamusukro es la capital oficial; Abiyán es la capital económica.
+CL	Chile	Santiago de Chile		Santiago	SA	Santiago
+CM	Camerún	Yaundé	Camerun	Yaoundé;Yaounde	AF	Yaoundé
+CN	China	Pekín		Beijing;Pequín	AS	Beijing
+CO	Colombia	Bogotá			SA	Bogotá
+CR	Costa Rica	San José			NC	San José, Costa Rica
+CU	Cuba	La Habana		Habana;Havana	CB	Havana
+CV	Cabo Verde	Praia			AF	Praia
+CY	Chipre	Nicosia			EU	Nicosia
+CZ	Chequia	Praga	República Checa	Prague;Praha	EU	Prague
+DE	Alemania	Berlín		Berlin	EU	Berlin
+DJ	Yibuti	Yibuti	Djibouti	Djibouti;Ciudad de Yibuti	AF	Djibouti (city)
+DK	Dinamarca	Copenhague		Copenhagen	EU	Copenhagen
+DM	Dominica	Roseau			CB	Roseau
+DO	República Dominicana	Santo Domingo	Dominicana		CB	Santo Domingo
+DZ	Argelia	Argel		Algiers	AF	Algiers
+EC	Ecuador	Quito			SA	Quito
+EE	Estonia	Tallin		Tallinn	EU	Tallinn
+EG	Egipto	El Cairo		Cairo	AF	Cairo	El Gobierno se ha ido trasladando a la Nueva Capital (renombrada en 2025), pero El Cairo sigue siendo la capital oficial.
+ER	Eritrea	Asmara			AF	Asmara
+ES	España	Madrid			EU	Madrid
+ET	Etiopía	Adís Abeba		Addis Abeba;Addis Ababa	AF	Addis Ababa
+FI	Finlandia	Helsinki			EU	Helsinki
+FJ	Fiyi	Suva	Fiji		OC	Suva
+FM	Micronesia	Palikir	Estados Federados de Micronesia		OC	Palikir
+FR	Francia	París		Paris	EU	Paris
+GA	Gabón	Libreville	Gabon		AF	Libreville
+GB	Reino Unido	Londres	Gran Bretaña	London	EU	London
+GD	Granada	Saint George's	Grenada	St. George's;Saint Georges	CB	St. George's, Grenada
+GE	Georgia	Tiflis		Tbilisi	AS	Tbilisi
+GH	Ghana	Acra		Accra	AF	Accra
+GM	Gambia	Banjul	La Gambia		AF	Banjul
+GN	Guinea	Conakri		Conakry	AF	Conakry
+GQ	Guinea Ecuatorial	Ciudad de la Paz		Oyala	AF	Ciudad de la Paz	Capital desde el 2 de enero de 2026 (Decreto-Ley 1/2026); antes lo era Malabo.
+GR	Grecia	Atenas		Athens	EU	Athens
+GT	Guatemala	Ciudad de Guatemala		Guatemala	NC	Guatemala City
+GW	Guinea-Bisáu	Bisáu	Guinea Bisáu;Guinea-Bissau;Guinea Bissau	Bissau	AF	Bissau
+GY	Guyana	Georgetown			SA	Georgetown, Guyana
+HN	Honduras	Tegucigalpa			NC	Tegucigalpa
+HR	Croacia	Zagreb			EU	Zagreb
+HT	Haití	Puerto Príncipe	Haiti	Port-au-Prince	CB	Port-au-Prince
+HU	Hungría	Budapest			EU	Budapest
+ID	Indonesia	Yakarta		Jakarta	AS	Jakarta	Nusantara está en construcción, pero Yakarta sigue siendo la capital hasta que un decreto presidencial formalice el traslado.
+IE	Irlanda	Dublín		Dublin	EU	Dublin
+IL	Israel	Jerusalén		Jerusalem	AS	Jerusalem	Capital proclamada por Israel y la que recogen las fuentes; su reconocimiento internacional es limitado y muchas embajadas están en Tel Aviv.
+IN	India	Nueva Delhi		New Delhi;Delhi	AS	New Delhi
+IQ	Irak	Bagdad	Iraq	Baghdad	AS	Baghdad
+IR	Irán	Teherán		Tehran	AS	Tehran
+IS	Islandia	Reikiavik		Reykjavik;Reikiavík	EU	Reykjavík
+IT	Italia	Roma		Rome	EU	Rome
+JM	Jamaica	Kingston			CB	Kingston, Jamaica
+JO	Jordania	Amán		Ammán;Amman	AS	Amman
+JP	Japón	Tokio		Tokyo	AS	Tokyo
+KE	Kenia	Nairobi	Kenya		AF	Nairobi
+KG	Kirguistán	Biskek	Kirguizistán;Kirguizia;Kirguistan	Bishkek	AS	Bishkek
+KH	Camboya	Nom Pen		Phnom Penh	AS	Phnom Penh
+KI	Kiribati	Tarawa		Tarawa Sur;South Tarawa	OC	South Tarawa
+KM	Comoras	Moroni			AF	Moroni, Comoros
+KN	San Cristóbal y Nieves	Basseterre	Saint Kitts y Nevis		CB	Basseterre
+KP	Corea del Norte	Pionyang		Pyongyang	AS	Pyongyang
+KR	Corea del Sur	Seúl		Seoul	AS	Seoul
+KW	Kuwait	Ciudad de Kuwait	Kuwéit	Kuwait	AS	Kuwait City
+KZ	Kazajistán	Astaná	Kazajstán;Kazakhstan	Astana	AS	Astana	Entre 2019 y 2022 se llamó Nur-Sultán.
+LA	Laos	Vientián		Vientiane	AS	Vientiane
+LB	Líbano	Beirut			AS	Beirut
+LC	Santa Lucía	Castries			CB	Castries
+LI	Liechtenstein	Vaduz			EU	Vaduz
+LK	Sri Lanka	Colombo		Sri Jayawardenapura Kotte;Sri Jayewardenepura Kotte;Kotte	AS	Colombo	Colombo es la capital ejecutiva y judicial; Sri Jayawardenapura Kotte, la legislativa (también se acepta).
+LR	Liberia	Monrovia			AF	Monrovia
+LS	Lesoto	Maseru	Lesotho		AF	Maseru
+LT	Lituania	Vilna		Vilnius	EU	Vilnius
+LU	Luxemburgo	Luxemburgo		Ciudad de Luxemburgo;Luxembourg	EU	Luxembourg City
+LV	Letonia	Riga			EU	Riga
+LY	Libia	Trípoli		Tripoli	AF	Tripoli, Libya
+MA	Marruecos	Rabat			AF	Rabat
+MC	Mónaco	Mónaco		Monaco	EU	Monaco
+MD	Moldavia	Chisináu	Moldova	Chisinau;Chișinău;Kishinev	EU	Chișinău
+ME	Montenegro	Podgorica			EU	Podgorica
+MG	Madagascar	Antananarivo			AF	Antananarivo
+MH	Islas Marshall	Majuro	Marshall		OC	Majuro
+MK	Macedonia del Norte	Skopie	Macedonia	Skopje	EU	Skopje
+ML	Malí	Bamako	Mali		AF	Bamako
+MM	Birmania	Naipyidó	Myanmar	Naypyidaw;Nay Pyi Taw;Naipyidaw	AS	Naypyidaw	El Gobierno de EE. UU. sigue citando Rangún como capital; el resto de fuentes da Naipyidó.
+MN	Mongolia	Ulán Bator		Ulan Bator;Ulaanbaatar	AS	Ulaanbaatar
+MR	Mauritania	Nuakchot		Nouakchott	AF	Nouakchott
+MT	Malta	La Valeta		Valeta;Valletta	EU	Valletta
+MU	Mauricio	Port Louis		Port-Louis	AF	Port Louis
+MV	Maldivas	Malé		Male	AS	Malé
+MW	Malaui	Lilongüe	Malawi	Lilongwe	AF	Lilongwe
+MX	México	Ciudad de México	Méjico	México;Mexico City;CDMX;México D. F.	NC	Mexico City
+MY	Malasia	Kuala Lumpur			AS	Kuala Lumpur	Putrajaya es el centro administrativo, pero la capital es Kuala Lumpur.
+MZ	Mozambique	Maputo			AF	Maputo
+NA	Namibia	Windhoek			AF	Windhoek
+NE	Níger	Niamey	Niger		AF	Niamey
+NG	Nigeria	Abuya		Abuja	AF	Abuja
+NI	Nicaragua	Managua			NC	Managua
+NL	Países Bajos	Ámsterdam	Holanda	Amsterdam	EU	Amsterdam	Ámsterdam es la capital constitucional; el Gobierno está en La Haya.
+NO	Noruega	Oslo			EU	Oslo
+NP	Nepal	Katmandú		Kathmandu	AS	Kathmandu
+NR	Nauru	Yaren			OC	Yaren District	Nauru no tiene capital oficial: el Gobierno está en el distrito de Yaren.
+NZ	Nueva Zelanda	Wellington			OC	Wellington
+OM	Omán	Mascate	Oman	Muscat	AS	Muscat
+PA	Panamá	Ciudad de Panamá		Panamá;Panama City	NC	Panama City
+PE	Perú	Lima			SA	Lima
+PG	Papúa Nueva Guinea	Port Moresby	Papua Nueva Guinea		OC	Port Moresby
+PH	Filipinas	Manila			AS	Manila
+PK	Pakistán	Islamabad			AS	Islamabad
+PL	Polonia	Varsovia		Warsaw;Warszawa	EU	Warsaw
+PS	Palestina	Ramala	Estado de Palestina	Ramallah;Jerusalén Este;Jerusalén Oriental;East Jerusalem	AS	Ramallah	Palestina proclama Jerusalén Este como capital (también se acepta); la sede administrativa está en Ramala.
+PT	Portugal	Lisboa		Lisbon	EU	Lisbon
+PW	Palaos	Ngerulmud	Palau		OC	Ngerulmud
+PY	Paraguay	Asunción			SA	Asunción
+QA	Catar	Doha	Qatar		AS	Doha
+RO	Rumanía	Bucarest	Rumania	Bucharest	EU	Bucharest
+RS	Serbia	Belgrado		Belgrade;Beograd	EU	Belgrade
+RU	Rusia	Moscú		Moscow	EU	Moscow
+RW	Ruanda	Kigali	Rwanda		AF	Kigali
+SA	Arabia Saudí	Riad	Arabia Saudita	Riyadh	AS	Riyadh
+SB	Islas Salomón	Honiara	Salomón		OC	Honiara
+SC	Seychelles	Victoria			AF	Victoria, Seychelles
+SD	Sudán	Jartum		Khartoum	AF	Khartoum	Por la guerra civil, el Gobierno ha operado desde Puerto Sudán, pero Jartum sigue siendo la capital oficial.
+SE	Suecia	Estocolmo		Stockholm	EU	Stockholm
+SG	Singapur	Singapur	Singapore	Singapore	AS	Singapore
+SI	Eslovenia	Liubliana		Ljubljana	EU	Ljubljana
+SK	Eslovaquia	Bratislava			EU	Bratislava
+SL	Sierra Leona	Freetown			AF	Freetown
+SM	San Marino	San Marino		Ciudad de San Marino	EU	City of San Marino
+SN	Senegal	Dakar			AF	Dakar
+SO	Somalia	Mogadiscio		Mogadishu	AF	Mogadishu
+SR	Surinam	Paramaribo	Suriname		SA	Paramaribo
+SS	Sudán del Sur	Yuba		Juba	AF	Juba
+ST	Santo Tomé y Príncipe	Santo Tomé		São Tomé;Sao Tome	AF	São Tomé
+SV	El Salvador	San Salvador	Salvador		NC	San Salvador
+SY	Siria	Damasco		Damascus	AS	Damascus
+SZ	Esuatini	Mbabane	Suazilandia;Eswatini;Swazilandia	Lobamba	AF	Mbabane	Mbabane es la capital administrativa; Lobamba, la real y legislativa (también se acepta).
+TD	Chad	Yamena		N'Djamena;Ndjamena;Yamina	AF	N'Djamena
+TG	Togo	Lomé			AF	Lomé
+TH	Tailandia	Bangkok			AS	Bangkok
+TJ	Tayikistán	Dusambé	Tayikistan	Dushanbe;Duchambé	AS	Dushanbe
+TL	Timor Oriental	Dili	Timor-Leste;Timor Leste		AS	Dili
+TM	Turkmenistán	Asjabad	Turkmenistan	Ashgabat;Asgabat	AS	Ashgabat
+TN	Túnez	Túnez	Tunez	Tunis	AF	Tunis
+TO	Tonga	Nukualofa		Nuku'alofa	OC	Nukuʻalofa
+TR	Turquía	Ankara	Türkiye;Turkiye		AS	Ankara
+TT	Trinidad y Tobago	Puerto España		Port of Spain	CB	Port of Spain
+TV	Tuvalu	Funafuti			OC	Funafuti
+TW	Taiwán	Taipéi	Taiwan	Taipei	AS	Taipei	Reconocimiento limitado: la mayoría de países occidentales no lo reconocen formalmente como Estado. Solo aparece si activas la opción correspondiente.
+TZ	Tanzania	Dodoma			AF	Dodoma	Dar es Salaam sigue siendo la mayor ciudad y capital económica.
+UA	Ucrania	Kiev		Kyiv;Kiiv;Kýiv	EU	Kyiv
+UG	Uganda	Kampala			AF	Kampala
+US	Estados Unidos	Washington D. C.	EE. UU.;EEUU;EE UU;USA;Estados Unidos de América	Washington;Washington DC;Washington D.C.	NC	Washington, D.C.
+UY	Uruguay	Montevideo			SA	Montevideo
+UZ	Uzbekistán	Taskent	Uzbekistan	Tashkent	AS	Tashkent
+VA	Vaticano	Ciudad del Vaticano	Ciudad del Vaticano;Santa Sede;Estado de la Ciudad del Vaticano	Vaticano	EU	Vatican City
+VC	San Vicente y las Granadinas	Kingstown	San Vicente y Granadinas;San Vicente		CB	Kingstown
+VE	Venezuela	Caracas			SA	Caracas
+VN	Vietnam	Hanói		Hanoi	AS	Hanoi
+VU	Vanuatu	Port Vila		Port-Vila	OC	Port Vila
+WS	Samoa	Apia			OC	Apia
+XK	Kosovo	Pristina		Prishtina	EU	Pristina	Reconocido por la mayoría de países occidentales (EE. UU., Reino Unido, Francia, Alemania…), aunque no por España ni por la ONU.
+YE	Yemen	Saná		Sanaa;Sana'a	AS	Sanaa	Saná, bajo control hutí, es la capital oficial; el Gobierno reconocido opera desde Adén.
+ZA	Sudáfrica	Pretoria		Ciudad del Cabo;Bloemfontein;Cape Town	AF	Pretoria	Sudáfrica tiene tres capitales: Pretoria (ejecutiva), Ciudad del Cabo (legislativa) y Bloemfontein (judicial). Se aceptan las tres.
+ZM	Zambia	Lusaka			AF	Lusaka
+ZW	Zimbabue	Harare	Zimbabwe		AF	Harare
