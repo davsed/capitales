@@ -42,7 +42,7 @@ Cuando había disputa se ha seguido el consenso occidental: Kosovo se incluye, T
 
 ```sh
 npm install            # d3-geo, topojson-client, world-atlas y flag-icons (solo para construir)
-npm run datos          # descarga las fuentes, contrasta, y genera js/datos.js, js/mapa.js y flags/
+npm run datos          # descarga las fuentes, contrasta, y genera js/datos.js, js/mapa.js, lista.html y flags/
 npm test               # pruebas de los datos y de la corrección de respuestas
 ```
 
@@ -51,6 +51,8 @@ npm test               # pruebas de los datos y de la corrección de respuestas
 | Ruta | Contenido |
 |---|---|
 | `index.html`, `css/estilos.css` | Interfaz |
+| `lista.html`, `sitemap.xml` | Generados: lista estática de países y capitales, y mapa del sitio para buscadores |
+| `img/` | Icono e imagen para compartir en redes |
 | `js/tabla.js` | Tabla bidireccional país ⇄ capital y corrección de respuestas |
 | `js/juego.js` | Lógica del juego, animaciones, mapa y fotos |
 | `js/datos.js`, `js/mapa.js` | Generados: países y mapamundi |
