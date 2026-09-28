@@ -445,10 +445,21 @@ a.nav-btn { color: var(--tinta-suave); }
 #mapa .fondo { fill: var(--tierra-otro); stroke: var(--tierra-borde); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
 #mapa .pais { fill: var(--tierra); stroke: var(--tierra-borde); stroke-width: 0.6; vector-effect: non-scaling-stroke; transition: fill 0.4s; }
 #mapa .pais.destino { fill: var(--senal); stroke: var(--tinta); stroke-width: 1.4; }
-#mapa .pin { fill: var(--mal); stroke: #fff; vector-effect: non-scaling-stroke; stroke-width: 1.5; }
-#mapa .onda-pin { fill: none; stroke: var(--mal); vector-effect: non-scaling-stroke; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: onda 1.6s ease-out infinite; }
+#mapa .pais.confundido { fill: color-mix(in srgb, var(--mal) 40%, var(--tierra)); stroke: var(--mal); stroke-width: 1.2; }
+#mapa .pin { fill: var(--tinta); stroke: var(--superficie); vector-effect: non-scaling-stroke; stroke-width: 1.5; }
+#mapa .pin-otro { fill: var(--mal); stroke: var(--superficie); vector-effect: non-scaling-stroke; stroke-width: 1.5; }
+#mapa .ruta-error {
+  fill: none; stroke: var(--mal); stroke-width: 2.2; stroke-dasharray: 7 6; stroke-linecap: round;
+  vector-effect: non-scaling-stroke; animation: vuelo 0.9s linear infinite;
+}
+@keyframes vuelo { to { stroke-dashoffset: -13; } }
+#mapa .onda-pin { fill: none; stroke: var(--tinta); vector-effect: non-scaling-stroke; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: onda 1.6s ease-out infinite; }
 @keyframes onda { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(3.4); opacity: 0; } }
 .mapa-pie { margin: 0; font-size: 12px; color: var(--tinta-suave); }
+.leyenda { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 2px; }
+.leyenda.destino { background: var(--tinta); }
+.leyenda.confundido { background: var(--mal); margin-left: 8px; }
+.veredicto .distancia strong { color: var(--mal); }
 .siguiente-fila { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
 .pausa { margin: 0; font-size: 13px; color: var(--tinta-suave); }
 .btn-siguiente { position: relative; overflow: hidden; min-width: 160px; }

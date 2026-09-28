@@ -3,7 +3,7 @@
 // para poder hacer zoom. Uso: node scripts/construir_mapa.mjs
 import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { geoNaturalEarth1, geoPath } from "d3-geo";
+import { geoArea, geoCentroid, geoDistance, geoNaturalEarth1, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 
 const require = createRequire(import.meta.url);
@@ -40,20 +40,38 @@ for (const f of f50) {
   }
 }
 
+/**
+ * Parte del país que se encuadra al hacer zoom: el polígono mayor y los que, siendo de un tamaño
+ * apreciable, están cerca de la capital. Deja fuera territorios lejanos (Guayana Francesa, Isla de Pascua…).
+ */
+function territorioPrincipal(f, capital) {
+  if (f.geometry.type !== "MultiPolygon") return f;
+  const partes = f.geometry.coordinates.map((c) => ({ c, area: geoArea({ type: "Polygon", coordinates: c }) }));
+  const mayor = Math.max(...partes.map((x) => x.area));
+  const elegidas = partes.filter((x) => x.area === mayor ||
+    (x.area >= mayor * 0.003 && geoDistance(geoCentroid({ type: "Polygon", coordinates: x.c }), capital) < 0.52)); // ~30°
+  return { type: "MultiPolygon", coordinates: elegidas.map((x) => x.c) };
+}
+
 const capitales = {};
 const cajas = {};
 for (const p of paises) {
   const [x, y] = proyeccion([p.lon, p.lat]);
   capitales[p.id] = [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
   if (formas[p.id]) {
-    const [[x0, y0], [x1, y1]] = trazo.bounds(f50.find((f) => f.id === (p.id === "XK" ? "XK" : p.ccn3)) || f110.find((f) => f.id === p.ccn3));
+    const f = f50.find((f) => f.id === (p.id === "XK" ? "XK" : p.ccn3)) || f110.find((f) => f.id === p.ccn3);
+    const [[x0, y0], [x1, y1]] = trazo.bounds(territorioPrincipal(f, [p.lon, p.lat]));
     cajas[p.id] = [x0, y0, x1, y1].map((v) => Math.round(v));
   }
 }
 
+// Escala y traslación de la proyección, para situar en el navegador puntos que no están precalculados
+// (por ejemplo, la ruta entre dos capitales).
+const proy = { k: +proyeccion.scale().toFixed(4), tx: +proyeccion.translate()[0].toFixed(4), ty: +proyeccion.translate()[1].toFixed(4) };
+
 const sinForma = paises.filter((p) => !formas[p.id]).map((p) => p.pais);
 const js = "// Generado por scripts/construir_mapa.mjs (Natural Earth vía world-atlas). No editar a mano.\n" +
-  "window.MAPA = " + JSON.stringify({ w: W, h: H, fondo: fondo.join(""), formas, capitales, cajas }) + ";\n";
+  "window.MAPA = " + JSON.stringify({ w: W, h: H, proy, fondo: fondo.join(""), formas, capitales, cajas }) + ";\n";
 writeFileSync(raiz + "js/mapa.js", js);
 console.log(`mapa.js: ${(js.length / 1024).toFixed(0)} KB · ${Object.keys(formas).length} países con forma` +
   (sinForma.length ? ` · solo punto: ${sinForma.join(", ")}` : ""));

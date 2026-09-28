@@ -89,3 +89,17 @@ test("no confunde un país o capital real con una errata", () => {
 test("respuesta vacía no cuenta", () => {
   assert.ok(TABLA.evaluar("   ", pc("ES"), true).vacia);
 });
+
+test("distancia entre capitales", () => {
+  const km = (a, b) => TABLA.distanciaKm(porId[a], porId[b]);
+  assert.ok(Math.abs(km("DE", "FR") - 878) < 15, `Berlín–París ${km("DE", "FR")}`);
+  assert.ok(Math.abs(km("ES", "PT") - 503) < 15, `Madrid–Lisboa ${km("ES", "PT")}`);
+  assert.ok(Math.abs(km("ES", "AR") - 10040) < 60, `Madrid–Buenos Aires ${km("ES", "AR")}`);
+  assert.equal(km("FR", "FR"), 0);
+});
+
+test("fronteras simétricas", () => {
+  for (const p of PAISES) for (const v of p.vecinos) assert.ok(porId[v].vecinos.includes(p.id), `${p.id}–${v}`);
+  assert.equal([...porId.ES.vecinos].sort().join(","), "AD,FR,MA,PT");
+  assert.equal(porId.AU.vecinos.length, 0);
+});

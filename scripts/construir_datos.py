@@ -191,6 +191,8 @@ def main():
     descargar()
     ml, gn_ciudades, fuentes, fb_coords = cargar_fuentes()
     ml_por_iso = {c["cca2"]: c for c in ml}
+    cca3_a_iso = {c["cca3"]: c["cca2"] for c in ml}
+    cca3_a_iso["UNK"] = "XK"  # algunas fuentes codifican Kosovo como UNK
     curado = cargar_curado()
 
     # Nombres españoles conocidos por CLDR (ciudades ejemplo de zonas horarias).
@@ -249,6 +251,7 @@ def main():
         d["ccn3"] = m.get("ccn3", "")
         d["pob"] = None
         d["limitado"] = i == "TW"
+        d["vecinos"] = [cca3_a_iso.get(c) for c in m.get("borders", [])]
         # Alternativas en inglés que aportan las fuentes (se aceptan como respuesta)
         ingles_pais = m["name"]["common"]
         if norm(ingles_pais) not in {norm(x) for x in [d["pais"]] + d["paisAlt"]}:
@@ -266,10 +269,19 @@ def main():
         if mejor and mejor["population"]:
             d["pob"] = mejor["population"]
 
+    # Fronteras simétricas y solo entre países del juego (si A limita con B, B limita con A).
+    ids_juego = {d["id"] for d in curado}
+    vecinos = {d["id"]: {v for v in d["vecinos"] if v in ids_juego} for d in curado}
+    for a, vs in list(vecinos.items()):
+        for b in vs:
+            vecinos[b].add(a)
+    for d in curado:
+        d["vecinos"] = sorted(vecinos[d["id"]])
+
     salida = []
     for d in sorted(curado, key=lambda x: norm(x["pais"])):
         salida.append({k: d[k] for k in ("id", "pais", "capital", "paisAlt", "capitalAlt", "cont",
-                                          "nota", "wiki", "lat", "lon", "ccn3", "pob", "limitado", "fuentes")})
+                                          "nota", "wiki", "lat", "lon", "ccn3", "pob", "limitado", "fuentes", "vecinos")})
 
     with open(os.path.join(RAIZ, "data", "paises.json"), "w", encoding="utf-8") as f:
         json.dump(salida, f, ensure_ascii=False, indent=1)

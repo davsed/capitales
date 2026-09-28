@@ -16,7 +16,15 @@
   "ccn3": "004",
   "pob": 4434550,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "IR",
+   "PK",
+   "TJ",
+   "TM",
+   "UZ"
+  ]
  },
  {
   "id": "AL",
@@ -34,7 +42,13 @@
   "ccn3": "008",
   "pob": 418495,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GR",
+   "ME",
+   "MK",
+   "XK"
+  ]
  },
  {
   "id": "DE",
@@ -54,7 +68,18 @@
   "ccn3": "276",
   "pob": 3426354,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "BE",
+   "CH",
+   "CZ",
+   "DK",
+   "FR",
+   "LU",
+   "NL",
+   "PL"
+  ]
  },
  {
   "id": "AD",
@@ -72,7 +97,11 @@
   "ccn3": "020",
   "pob": 20430,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "ES",
+   "FR"
+  ]
  },
  {
   "id": "AO",
@@ -88,7 +117,13 @@
   "ccn3": "024",
   "pob": 2776168,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CD",
+   "CG",
+   "NA",
+   "ZM"
+  ]
  },
  {
   "id": "AG",
@@ -110,7 +145,8 @@
   "ccn3": "028",
   "pob": 51737,
   "limitado": false,
-  "fuentes": "4/4"
+  "fuentes": "4/4",
+  "vecinos": []
  },
  {
   "id": "SA",
@@ -131,7 +167,16 @@
   "ccn3": "682",
   "pob": 4205961,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AE",
+   "IQ",
+   "JO",
+   "KW",
+   "OM",
+   "QA",
+   "YE"
+  ]
  },
  {
   "id": "DZ",
@@ -151,7 +196,15 @@
   "ccn3": "012",
   "pob": 2364230,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "LY",
+   "MA",
+   "ML",
+   "MR",
+   "NE",
+   "TN"
+  ]
  },
  {
   "id": "AR",
@@ -167,7 +220,14 @@
   "ccn3": "032",
   "pob": 2891082,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BO",
+   "BR",
+   "CL",
+   "PY",
+   "UY"
+  ]
  },
  {
   "id": "AM",
@@ -186,7 +246,13 @@
   "ccn3": "051",
   "pob": 1144700,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AZ",
+   "GE",
+   "IR",
+   "TR"
+  ]
  },
  {
   "id": "AU",
@@ -202,7 +268,8 @@
   "ccn3": "036",
   "pob": 367752,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "AT",
@@ -221,7 +288,17 @@
   "ccn3": "040",
   "pob": 1691468,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CH",
+   "CZ",
+   "DE",
+   "HU",
+   "IT",
+   "LI",
+   "SI",
+   "SK"
+  ]
  },
  {
   "id": "AZ",
@@ -241,7 +318,14 @@
   "ccn3": "031",
   "pob": 2351300,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AM",
+   "GE",
+   "IR",
+   "RU",
+   "TR"
+  ]
  },
  {
   "id": "BS",
@@ -261,7 +345,8 @@
   "ccn3": "044",
   "pob": 227940,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "BD",
@@ -282,7 +367,11 @@
   "ccn3": "050",
   "pob": 10356500,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IN",
+   "MM"
+  ]
  },
  {
   "id": "BB",
@@ -298,7 +387,8 @@
   "ccn3": "052",
   "pob": 98511,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "BH",
@@ -318,7 +408,8 @@
   "ccn3": "048",
   "pob": 147074,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "BE",
@@ -339,7 +430,13 @@
   "ccn3": "056",
   "pob": 1019022,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DE",
+   "FR",
+   "LU",
+   "NL"
+  ]
  },
  {
   "id": "BZ",
@@ -359,7 +456,11 @@
   "ccn3": "084",
   "pob": 13381,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GT",
+   "MX"
+  ]
  },
  {
   "id": "BJ",
@@ -380,7 +481,13 @@
   "ccn3": "204",
   "pob": 264320,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BF",
+   "NE",
+   "NG",
+   "TG"
+  ]
  },
  {
   "id": "BY",
@@ -399,7 +506,14 @@
   "ccn3": "112",
   "pob": 1742124,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "LT",
+   "LV",
+   "PL",
+   "RU",
+   "UA"
+  ]
  },
  {
   "id": "MM",
@@ -421,7 +535,14 @@
   "ccn3": "104",
   "pob": 925000,
   "limitado": false,
-  "fuentes": "4/5"
+  "fuentes": "4/5",
+  "vecinos": [
+   "BD",
+   "CN",
+   "IN",
+   "LA",
+   "TH"
+  ]
  },
  {
   "id": "BO",
@@ -439,7 +560,14 @@
   "ccn3": "068",
   "pob": 2004652,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AR",
+   "BR",
+   "CL",
+   "PE",
+   "PY"
+  ]
  },
  {
   "id": "BA",
@@ -459,7 +587,12 @@
   "ccn3": "070",
   "pob": 696731,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "HR",
+   "ME",
+   "RS"
+  ]
  },
  {
   "id": "BW",
@@ -477,7 +610,13 @@
   "ccn3": "072",
   "pob": 246325,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "NA",
+   "ZA",
+   "ZM",
+   "ZW"
+  ]
  },
  {
   "id": "BR",
@@ -497,7 +636,18 @@
   "ccn3": "076",
   "pob": 2207718,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AR",
+   "BO",
+   "CO",
+   "GY",
+   "PE",
+   "PY",
+   "SR",
+   "UY",
+   "VE"
+  ]
  },
  {
   "id": "BN",
@@ -515,7 +665,10 @@
   "ccn3": "096",
   "pob": 64409,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "MY"
+  ]
  },
  {
   "id": "BG",
@@ -533,7 +686,14 @@
   "ccn3": "100",
   "pob": 1152556,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GR",
+   "MK",
+   "RO",
+   "RS",
+   "TR"
+  ]
  },
  {
   "id": "BF",
@@ -551,7 +711,15 @@
   "ccn3": "854",
   "pob": 2415266,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BJ",
+   "CI",
+   "GH",
+   "ML",
+   "NE",
+   "TG"
+  ]
  },
  {
   "id": "BI",
@@ -567,7 +735,12 @@
   "ccn3": "108",
   "pob": 64904,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CD",
+   "RW",
+   "TZ"
+  ]
  },
  {
   "id": "BT",
@@ -589,7 +762,11 @@
   "ccn3": "064",
   "pob": 98676,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "IN"
+  ]
  },
  {
   "id": "CV",
@@ -607,7 +784,8 @@
   "ccn3": "132",
   "pob": 137868,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "KH",
@@ -627,7 +805,12 @@
   "ccn3": "116",
   "pob": 1573544,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "LA",
+   "TH",
+   "VN"
+  ]
  },
  {
   "id": "CM",
@@ -649,7 +832,15 @@
   "ccn3": "120",
   "pob": 1299369,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CF",
+   "CG",
+   "GA",
+   "GQ",
+   "NG",
+   "TD"
+  ]
  },
  {
   "id": "CA",
@@ -667,7 +858,10 @@
   "ccn3": "124",
   "pob": 1017449,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "US"
+  ]
  },
  {
   "id": "QA",
@@ -685,7 +879,10 @@
   "ccn3": "634",
   "pob": 344939,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "SA"
+  ]
  },
  {
   "id": "TD",
@@ -705,7 +902,15 @@
   "ccn3": "148",
   "pob": 1359526,
   "limitado": false,
-  "fuentes": "4/4"
+  "fuentes": "4/4",
+  "vecinos": [
+   "CF",
+   "CM",
+   "LY",
+   "NE",
+   "NG",
+   "SD"
+  ]
  },
  {
   "id": "CZ",
@@ -727,7 +932,13 @@
   "ccn3": "203",
   "pob": 1165581,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "DE",
+   "PL",
+   "SK"
+  ]
  },
  {
   "id": "CL",
@@ -745,7 +956,12 @@
   "ccn3": "152",
   "pob": 4837295,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AR",
+   "BO",
+   "PE"
+  ]
  },
  {
   "id": "CN",
@@ -764,7 +980,23 @@
   "ccn3": "156",
   "pob": 18960744,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AF",
+   "BT",
+   "IN",
+   "KG",
+   "KP",
+   "KZ",
+   "LA",
+   "MM",
+   "MN",
+   "NP",
+   "PK",
+   "RU",
+   "TJ",
+   "VN"
+  ]
  },
  {
   "id": "CY",
@@ -782,7 +1014,8 @@
   "ccn3": "196",
   "pob": 200452,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "CO",
@@ -798,7 +1031,14 @@
   "ccn3": "170",
   "pob": 7674366,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BR",
+   "EC",
+   "PA",
+   "PE",
+   "VE"
+  ]
  },
  {
   "id": "KM",
@@ -816,7 +1056,8 @@
   "ccn3": "174",
   "pob": 74749,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "KP",
@@ -836,7 +1077,12 @@
   "ccn3": "408",
   "pob": 3222000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "KR",
+   "RU"
+  ]
  },
  {
   "id": "KR",
@@ -856,7 +1102,10 @@
   "ccn3": "410",
   "pob": 10349312,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "KP"
+  ]
  },
  {
   "id": "CI",
@@ -877,7 +1126,14 @@
   "ccn3": "384",
   "pob": 275686,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BF",
+   "GH",
+   "GN",
+   "LR",
+   "ML"
+  ]
  },
  {
   "id": "CR",
@@ -893,7 +1149,11 @@
   "ccn3": "188",
   "pob": 335007,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "NI",
+   "PA"
+  ]
  },
  {
   "id": "HR",
@@ -911,7 +1171,14 @@
   "ccn3": "191",
   "pob": 663592,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BA",
+   "HU",
+   "ME",
+   "RS",
+   "SI"
+  ]
  },
  {
   "id": "CU",
@@ -930,7 +1197,8 @@
   "ccn3": "192",
   "pob": 2163824,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "DK",
@@ -950,7 +1218,10 @@
   "ccn3": "208",
   "pob": 1153615,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DE"
+  ]
  },
  {
   "id": "DM",
@@ -966,7 +1237,8 @@
   "ccn3": "212",
   "pob": 16571,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "EC",
@@ -982,7 +1254,11 @@
   "ccn3": "218",
   "pob": 2781641,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CO",
+   "PE"
+  ]
  },
  {
   "id": "EG",
@@ -1002,7 +1278,13 @@
   "ccn3": "818",
   "pob": 9606916,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IL",
+   "LY",
+   "PS",
+   "SD"
+  ]
  },
  {
   "id": "SV",
@@ -1020,7 +1302,11 @@
   "ccn3": "222",
   "pob": 525990,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GT",
+   "HN"
+  ]
  },
  {
   "id": "AE",
@@ -1042,7 +1328,11 @@
   "ccn3": "784",
   "pob": 1807000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "OM",
+   "SA"
+  ]
  },
  {
   "id": "ER",
@@ -1058,7 +1348,12 @@
   "ccn3": "232",
   "pob": 563930,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DJ",
+   "ET",
+   "SD"
+  ]
  },
  {
   "id": "SK",
@@ -1076,7 +1371,14 @@
   "ccn3": "703",
   "pob": 423737,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "CZ",
+   "HU",
+   "PL",
+   "UA"
+  ]
  },
  {
   "id": "SI",
@@ -1096,7 +1398,13 @@
   "ccn3": "705",
   "pob": 272220,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "HR",
+   "HU",
+   "IT"
+  ]
  },
  {
   "id": "ES",
@@ -1114,7 +1422,13 @@
   "ccn3": "724",
   "pob": 3255944,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AD",
+   "FR",
+   "MA",
+   "PT"
+  ]
  },
  {
   "id": "US",
@@ -1141,7 +1455,11 @@
   "ccn3": "840",
   "pob": 689545,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CA",
+   "MX"
+  ]
  },
  {
   "id": "EE",
@@ -1159,7 +1477,11 @@
   "ccn3": "233",
   "pob": 394024,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "LV",
+   "RU"
+  ]
  },
  {
   "id": "SZ",
@@ -1181,7 +1503,11 @@
   "ccn3": "748",
   "pob": 76218,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "MZ",
+   "ZA"
+  ]
  },
  {
   "id": "ET",
@@ -1202,7 +1528,15 @@
   "ccn3": "231",
   "pob": 3860000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DJ",
+   "ER",
+   "KE",
+   "SD",
+   "SO",
+   "SS"
+  ]
  },
  {
   "id": "PH",
@@ -1220,7 +1554,8 @@
   "ccn3": "608",
   "pob": 1600000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "FI",
@@ -1238,7 +1573,12 @@
   "ccn3": "246",
   "pob": 658864,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "NO",
+   "RU",
+   "SE"
+  ]
  },
  {
   "id": "FJ",
@@ -1256,7 +1596,8 @@
   "ccn3": "242",
   "pob": 77366,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "FR",
@@ -1276,7 +1617,17 @@
   "ccn3": "250",
   "pob": 2138551,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AD",
+   "BE",
+   "CH",
+   "DE",
+   "ES",
+   "IT",
+   "LU",
+   "MC"
+  ]
  },
  {
   "id": "GA",
@@ -1294,7 +1645,12 @@
   "ccn3": "266",
   "pob": 846090,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CG",
+   "CM",
+   "GQ"
+  ]
  },
  {
   "id": "GM",
@@ -1312,7 +1668,10 @@
   "ccn3": "270",
   "pob": 37274,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "SN"
+  ]
  },
  {
   "id": "GE",
@@ -1330,7 +1689,13 @@
   "ccn3": "268",
   "pob": 1049498,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AM",
+   "AZ",
+   "RU",
+   "TR"
+  ]
  },
  {
   "id": "GH",
@@ -1348,7 +1713,12 @@
   "ccn3": "288",
   "pob": 1963264,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BF",
+   "CI",
+   "TG"
+  ]
  },
  {
   "id": "GD",
@@ -1369,7 +1739,8 @@
   "ccn3": "308",
   "pob": 7500,
   "limitado": false,
-  "fuentes": "4/4"
+  "fuentes": "4/4",
+  "vecinos": []
  },
  {
   "id": "GR",
@@ -1389,7 +1760,13 @@
   "ccn3": "300",
   "pob": 664046,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AL",
+   "BG",
+   "MK",
+   "TR"
+  ]
  },
  {
   "id": "GT",
@@ -1407,7 +1784,13 @@
   "ccn3": "320",
   "pob": 994938,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BZ",
+   "HN",
+   "MX",
+   "SV"
+  ]
  },
  {
   "id": "GN",
@@ -1425,7 +1808,15 @@
   "ccn3": "324",
   "pob": 1928389,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CI",
+   "GW",
+   "LR",
+   "ML",
+   "SL",
+   "SN"
+  ]
  },
  {
   "id": "GW",
@@ -1447,7 +1838,11 @@
   "ccn3": "624",
   "pob": 439704,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GN",
+   "SN"
+  ]
  },
  {
   "id": "GQ",
@@ -1467,7 +1862,11 @@
   "ccn3": "226",
   "pob": 2000,
   "limitado": false,
-  "fuentes": "1/5"
+  "fuentes": "1/5",
+  "vecinos": [
+   "CM",
+   "GA"
+  ]
  },
  {
   "id": "GY",
@@ -1483,7 +1882,12 @@
   "ccn3": "328",
   "pob": 235017,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BR",
+   "SR",
+   "VE"
+  ]
  },
  {
   "id": "HT",
@@ -1503,7 +1907,10 @@
   "ccn3": "332",
   "pob": 1234742,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DO"
+  ]
  },
  {
   "id": "HN",
@@ -1519,7 +1926,12 @@
   "ccn3": "340",
   "pob": 850848,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GT",
+   "NI",
+   "SV"
+  ]
  },
  {
   "id": "HU",
@@ -1537,7 +1949,16 @@
   "ccn3": "348",
   "pob": 1741041,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "HR",
+   "RO",
+   "RS",
+   "SI",
+   "SK",
+   "UA"
+  ]
  },
  {
   "id": "IN",
@@ -1556,7 +1977,16 @@
   "ccn3": "356",
   "pob": 11034555,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BD",
+   "BT",
+   "CN",
+   "LK",
+   "MM",
+   "NP",
+   "PK"
+  ]
  },
  {
   "id": "ID",
@@ -1574,7 +2004,12 @@
   "ccn3": "360",
   "pob": 8540121,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "MY",
+   "PG",
+   "TL"
+  ]
  },
  {
   "id": "IQ",
@@ -1594,7 +2029,15 @@
   "ccn3": "368",
   "pob": 7216000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IR",
+   "JO",
+   "KW",
+   "SA",
+   "SY",
+   "TR"
+  ]
  },
  {
   "id": "IR",
@@ -1612,7 +2055,16 @@
   "ccn3": "364",
   "pob": 7153309,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AF",
+   "AM",
+   "AZ",
+   "IQ",
+   "PK",
+   "TM",
+   "TR"
+  ]
  },
  {
   "id": "IE",
@@ -1632,7 +2084,10 @@
   "ccn3": "372",
   "pob": 1024027,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GB"
+  ]
  },
  {
   "id": "IS",
@@ -1653,7 +2108,8 @@
   "ccn3": "352",
   "pob": 118918,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "MH",
@@ -1672,7 +2128,8 @@
   "ccn3": "584",
   "pob": 25400,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "SB",
@@ -1691,7 +2148,8 @@
   "ccn3": "090",
   "pob": 56298,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "IL",
@@ -1709,7 +2167,14 @@
   "ccn3": "376",
   "pob": 971800,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "EG",
+   "JO",
+   "LB",
+   "PS",
+   "SY"
+  ]
  },
  {
   "id": "IT",
@@ -1729,7 +2194,15 @@
   "ccn3": "380",
   "pob": 2318895,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "CH",
+   "FR",
+   "SI",
+   "SM",
+   "VA"
+  ]
  },
  {
   "id": "JM",
@@ -1745,7 +2218,8 @@
   "ccn3": "388",
   "pob": 937700,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "JP",
@@ -1765,7 +2239,8 @@
   "ccn3": "392",
   "pob": 9733276,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "JO",
@@ -1786,7 +2261,14 @@
   "ccn3": "400",
   "pob": 1275857,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IL",
+   "IQ",
+   "PS",
+   "SA",
+   "SY"
+  ]
  },
  {
   "id": "KZ",
@@ -1807,7 +2289,14 @@
   "ccn3": "398",
   "pob": 1544142,
   "limitado": false,
-  "fuentes": "3/5"
+  "fuentes": "3/5",
+  "vecinos": [
+   "CN",
+   "KG",
+   "RU",
+   "TM",
+   "UZ"
+  ]
  },
  {
   "id": "KE",
@@ -1825,7 +2314,14 @@
   "ccn3": "404",
   "pob": 4397073,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "ET",
+   "SO",
+   "SS",
+   "TZ",
+   "UG"
+  ]
  },
  {
   "id": "KG",
@@ -1848,7 +2344,13 @@
   "ccn3": "417",
   "pob": 900000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "KZ",
+   "TJ",
+   "UZ"
+  ]
  },
  {
   "id": "KI",
@@ -1867,7 +2369,8 @@
   "ccn3": "296",
   "pob": 40311,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "XK",
@@ -1885,7 +2388,13 @@
   "ccn3": "",
   "pob": 550000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AL",
+   "ME",
+   "MK",
+   "RS"
+  ]
  },
  {
   "id": "KW",
@@ -1905,7 +2414,11 @@
   "ccn3": "414",
   "pob": 60064,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IQ",
+   "SA"
+  ]
  },
  {
   "id": "LA",
@@ -1923,7 +2436,14 @@
   "ccn3": "418",
   "pob": 840940,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "KH",
+   "MM",
+   "TH",
+   "VN"
+  ]
  },
  {
   "id": "LS",
@@ -1941,7 +2461,10 @@
   "ccn3": "426",
   "pob": 359753,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "ZA"
+  ]
  },
  {
   "id": "LV",
@@ -1959,7 +2482,13 @@
   "ccn3": "428",
   "pob": 742572,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BY",
+   "EE",
+   "LT",
+   "RU"
+  ]
  },
  {
   "id": "LB",
@@ -1977,7 +2506,11 @@
   "ccn3": "422",
   "pob": 1916100,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IL",
+   "SY"
+  ]
  },
  {
   "id": "LR",
@@ -1993,7 +2526,12 @@
   "ccn3": "430",
   "pob": 1542549,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CI",
+   "GN",
+   "SL"
+  ]
  },
  {
   "id": "LY",
@@ -2013,7 +2551,15 @@
   "ccn3": "434",
   "pob": 1302947,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DZ",
+   "EG",
+   "NE",
+   "SD",
+   "TD",
+   "TN"
+  ]
  },
  {
   "id": "LI",
@@ -2029,7 +2575,11 @@
   "ccn3": "438",
   "pob": 5197,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "CH"
+  ]
  },
  {
   "id": "LT",
@@ -2049,7 +2599,13 @@
   "ccn3": "440",
   "pob": 542366,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BY",
+   "LV",
+   "PL",
+   "RU"
+  ]
  },
  {
   "id": "LU",
@@ -2070,7 +2626,12 @@
   "ccn3": "442",
   "pob": 76684,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BE",
+   "DE",
+   "FR"
+  ]
  },
  {
   "id": "MK",
@@ -2091,7 +2652,14 @@
   "ccn3": "807",
   "pob": 474889,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AL",
+   "BG",
+   "GR",
+   "RS",
+   "XK"
+  ]
  },
  {
   "id": "MG",
@@ -2107,7 +2675,8 @@
   "ccn3": "450",
   "pob": 1349501,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "MY",
@@ -2125,7 +2694,12 @@
   "ccn3": "458",
   "pob": 1453975,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BN",
+   "ID",
+   "TH"
+  ]
  },
  {
   "id": "MW",
@@ -2145,7 +2719,12 @@
   "ccn3": "454",
   "pob": 1115815,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "MZ",
+   "TZ",
+   "ZM"
+  ]
  },
  {
   "id": "MV",
@@ -2165,7 +2744,8 @@
   "ccn3": "462",
   "pob": 103693,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "ML",
@@ -2183,7 +2763,16 @@
   "ccn3": "466",
   "pob": 4227569,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BF",
+   "CI",
+   "DZ",
+   "GN",
+   "MR",
+   "NE",
+   "SN"
+  ]
  },
  {
   "id": "MT",
@@ -2202,7 +2791,8 @@
   "ccn3": "470",
   "pob": 6794,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "MA",
@@ -2220,7 +2810,11 @@
   "ccn3": "504",
   "pob": 1655753,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DZ",
+   "ES"
+  ]
  },
  {
   "id": "MU",
@@ -2240,7 +2834,8 @@
   "ccn3": "480",
   "pob": 155226,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "MR",
@@ -2258,7 +2853,12 @@
   "ccn3": "478",
   "pob": 1184530,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DZ",
+   "ML",
+   "SN"
+  ]
  },
  {
   "id": "MX",
@@ -2281,7 +2881,12 @@
   "ccn3": "484",
   "pob": 12294193,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BZ",
+   "GT",
+   "US"
+  ]
  },
  {
   "id": "FM",
@@ -2299,7 +2904,8 @@
   "ccn3": "583",
   "pob": 6942,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "MD",
@@ -2321,7 +2927,11 @@
   "ccn3": "498",
   "pob": 635994,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "RO",
+   "UA"
+  ]
  },
  {
   "id": "MC",
@@ -2339,7 +2949,10 @@
   "ccn3": "492",
   "pob": 32965,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "FR"
+  ]
  },
  {
   "id": "MN",
@@ -2358,7 +2971,11 @@
   "ccn3": "496",
   "pob": 844818,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "RU"
+  ]
  },
  {
   "id": "ME",
@@ -2374,7 +2991,14 @@
   "ccn3": "499",
   "pob": 236852,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AL",
+   "BA",
+   "HR",
+   "RS",
+   "XK"
+  ]
  },
  {
   "id": "MZ",
@@ -2390,7 +3014,15 @@
   "ccn3": "508",
   "pob": 1254837,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "MW",
+   "SZ",
+   "TZ",
+   "ZA",
+   "ZM",
+   "ZW"
+  ]
  },
  {
   "id": "NA",
@@ -2406,7 +3038,13 @@
   "ccn3": "516",
   "pob": 386219,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AO",
+   "BW",
+   "ZA",
+   "ZM"
+  ]
  },
  {
   "id": "NR",
@@ -2422,7 +3060,8 @@
   "ccn3": "520",
   "pob": 1100,
   "limitado": false,
-  "fuentes": "4/5"
+  "fuentes": "4/5",
+  "vecinos": []
  },
  {
   "id": "NP",
@@ -2440,7 +3079,11 @@
   "ccn3": "524",
   "pob": 1442271,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "IN"
+  ]
  },
  {
   "id": "NI",
@@ -2456,7 +3099,11 @@
   "ccn3": "558",
   "pob": 973087,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CR",
+   "HN"
+  ]
  },
  {
   "id": "NE",
@@ -2474,7 +3121,16 @@
   "ccn3": "562",
   "pob": 1323691,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BF",
+   "BJ",
+   "DZ",
+   "LY",
+   "ML",
+   "NG",
+   "TD"
+  ]
  },
  {
   "id": "NG",
@@ -2492,7 +3148,13 @@
   "ccn3": "566",
   "pob": 2690000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BJ",
+   "CM",
+   "NE",
+   "TD"
+  ]
  },
  {
   "id": "NO",
@@ -2510,7 +3172,12 @@
   "ccn3": "578",
   "pob": 1082575,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "FI",
+   "RU",
+   "SE"
+  ]
  },
  {
   "id": "NZ",
@@ -2528,7 +3195,8 @@
   "ccn3": "554",
   "pob": 381900,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "OM",
@@ -2548,7 +3216,12 @@
   "ccn3": "512",
   "pob": 797000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AE",
+   "SA",
+   "YE"
+  ]
  },
  {
   "id": "NL",
@@ -2569,7 +3242,11 @@
   "ccn3": "528",
   "pob": 741636,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BE",
+   "DE"
+  ]
  },
  {
   "id": "PK",
@@ -2585,7 +3262,13 @@
   "ccn3": "586",
   "pob": 601600,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AF",
+   "CN",
+   "IN",
+   "IR"
+  ]
  },
  {
   "id": "PW",
@@ -2603,7 +3286,8 @@
   "ccn3": "585",
   "pob": null,
   "limitado": false,
-  "fuentes": "4/5"
+  "fuentes": "4/5",
+  "vecinos": []
  },
  {
   "id": "PS",
@@ -2627,7 +3311,12 @@
   "ccn3": "275",
   "pob": 428304,
   "limitado": false,
-  "fuentes": "4/4"
+  "fuentes": "4/4",
+  "vecinos": [
+   "EG",
+   "IL",
+   "JO"
+  ]
  },
  {
   "id": "PA",
@@ -2646,7 +3335,11 @@
   "ccn3": "591",
   "pob": 408168,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CO",
+   "CR"
+  ]
  },
  {
   "id": "PG",
@@ -2665,7 +3358,10 @@
   "ccn3": "598",
   "pob": 283733,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "ID"
+  ]
  },
  {
   "id": "PY",
@@ -2681,7 +3377,12 @@
   "ccn3": "600",
   "pob": 1482200,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AR",
+   "BO",
+   "BR"
+  ]
  },
  {
   "id": "PE",
@@ -2697,7 +3398,14 @@
   "ccn3": "604",
   "pob": 7737002,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BO",
+   "BR",
+   "CL",
+   "CO",
+   "EC"
+  ]
  },
  {
   "id": "PL",
@@ -2718,7 +3426,16 @@
   "ccn3": "616",
   "pob": 1702139,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BY",
+   "CZ",
+   "DE",
+   "LT",
+   "RU",
+   "SK",
+   "UA"
+  ]
  },
  {
   "id": "PT",
@@ -2736,7 +3453,10 @@
   "ccn3": "620",
   "pob": 517802,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "ES"
+  ]
  },
  {
   "id": "GB",
@@ -2757,7 +3477,10 @@
   "ccn3": "826",
   "pob": 8961989,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IE"
+  ]
  },
  {
   "id": "CF",
@@ -2776,7 +3499,15 @@
   "ccn3": "140",
   "pob": 812407,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CD",
+   "CG",
+   "CM",
+   "SD",
+   "SS",
+   "TD"
+  ]
  },
  {
   "id": "CG",
@@ -2798,7 +3529,14 @@
   "ccn3": "178",
   "pob": 1982000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AO",
+   "CD",
+   "CF",
+   "CM",
+   "GA"
+  ]
  },
  {
   "id": "CD",
@@ -2822,7 +3560,18 @@
   "ccn3": "180",
   "pob": 16000000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AO",
+   "BI",
+   "CF",
+   "CG",
+   "RW",
+   "SS",
+   "TZ",
+   "UG",
+   "ZM"
+  ]
  },
  {
   "id": "DO",
@@ -2841,7 +3590,10 @@
   "ccn3": "214",
   "pob": 2201941,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "HT"
+  ]
  },
  {
   "id": "RW",
@@ -2859,7 +3611,13 @@
   "ccn3": "646",
   "pob": 1132686,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BI",
+   "CD",
+   "TZ",
+   "UG"
+  ]
  },
  {
   "id": "RO",
@@ -2880,7 +3638,14 @@
   "ccn3": "642",
   "pob": 1877155,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BG",
+   "HU",
+   "MD",
+   "RS",
+   "UA"
+  ]
  },
  {
   "id": "RU",
@@ -2900,7 +3665,23 @@
   "ccn3": "643",
   "pob": 10381222,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AZ",
+   "BY",
+   "CN",
+   "EE",
+   "FI",
+   "GE",
+   "KP",
+   "KZ",
+   "LT",
+   "LV",
+   "MN",
+   "NO",
+   "PL",
+   "UA"
+  ]
  },
  {
   "id": "WS",
@@ -2916,7 +3697,8 @@
   "ccn3": "882",
   "pob": 40407,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "KN",
@@ -2935,7 +3717,8 @@
   "ccn3": "659",
   "pob": 12920,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "SM",
@@ -2953,7 +3736,10 @@
   "ccn3": "674",
   "pob": 4500,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IT"
+  ]
  },
  {
   "id": "LC",
@@ -2971,7 +3757,8 @@
   "ccn3": "662",
   "pob": 20000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "ST",
@@ -2992,7 +3779,8 @@
   "ccn3": "678",
   "pob": 53300,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "VC",
@@ -3012,7 +3800,8 @@
   "ccn3": "670",
   "pob": 24518,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "SN",
@@ -3028,7 +3817,14 @@
   "ccn3": "686",
   "pob": 2646503,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GM",
+   "GN",
+   "GW",
+   "ML",
+   "MR"
+  ]
  },
  {
   "id": "RS",
@@ -3047,7 +3843,17 @@
   "ccn3": "688",
   "pob": 1273651,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BA",
+   "BG",
+   "HR",
+   "HU",
+   "ME",
+   "MK",
+   "RO",
+   "XK"
+  ]
  },
  {
   "id": "SC",
@@ -3063,7 +3869,8 @@
   "ccn3": "690",
   "pob": 22881,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "SL",
@@ -3081,7 +3888,11 @@
   "ccn3": "694",
   "pob": 802639,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "GN",
+   "LR"
+  ]
  },
  {
   "id": "SG",
@@ -3101,7 +3912,8 @@
   "ccn3": "702",
   "pob": 5638700,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "SY",
@@ -3121,7 +3933,14 @@
   "ccn3": "760",
   "pob": 1569394,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IL",
+   "IQ",
+   "JO",
+   "LB",
+   "TR"
+  ]
  },
  {
   "id": "SO",
@@ -3139,7 +3958,12 @@
   "ccn3": "706",
   "pob": 2587183,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DJ",
+   "ET",
+   "KE"
+  ]
  },
  {
   "id": "LK",
@@ -3159,7 +3983,10 @@
   "ccn3": "144",
   "pob": 648034,
   "limitado": false,
-  "fuentes": "4/5"
+  "fuentes": "4/5",
+  "vecinos": [
+   "IN"
+  ]
  },
  {
   "id": "ZA",
@@ -3181,7 +4008,15 @@
   "ccn3": "710",
   "pob": 4772846,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BW",
+   "LS",
+   "MZ",
+   "NA",
+   "SZ",
+   "ZW"
+  ]
  },
  {
   "id": "SD",
@@ -3199,7 +4034,16 @@
   "ccn3": "729",
   "pob": 1974647,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CF",
+   "EG",
+   "ER",
+   "ET",
+   "LY",
+   "SS",
+   "TD"
+  ]
  },
  {
   "id": "SS",
@@ -3219,7 +4063,15 @@
   "ccn3": "728",
   "pob": 450000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CD",
+   "CF",
+   "ET",
+   "KE",
+   "SD",
+   "UG"
+  ]
  },
  {
   "id": "SE",
@@ -3239,7 +4091,11 @@
   "ccn3": "752",
   "pob": 1515017,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "FI",
+   "NO"
+  ]
  },
  {
   "id": "CH",
@@ -3260,7 +4116,14 @@
   "ccn3": "756",
   "pob": 121631,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AT",
+   "DE",
+   "FR",
+   "IT",
+   "LI"
+  ]
  },
  {
   "id": "SR",
@@ -3278,7 +4141,11 @@
   "ccn3": "740",
   "pob": 223757,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BR",
+   "GY"
+  ]
  },
  {
   "id": "TH",
@@ -3296,7 +4163,13 @@
   "ccn3": "764",
   "pob": 5104476,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "KH",
+   "LA",
+   "MM",
+   "MY"
+  ]
  },
  {
   "id": "TW",
@@ -3316,7 +4189,8 @@
   "ccn3": "158",
   "pob": 7871900,
   "limitado": true,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "TZ",
@@ -3332,7 +4206,17 @@
   "ccn3": "834",
   "pob": 765179,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BI",
+   "CD",
+   "KE",
+   "MW",
+   "MZ",
+   "RW",
+   "UG",
+   "ZM"
+  ]
  },
  {
   "id": "TJ",
@@ -3354,7 +4238,13 @@
   "ccn3": "762",
   "pob": 679400,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AF",
+   "CN",
+   "KG",
+   "UZ"
+  ]
  },
  {
   "id": "TL",
@@ -3373,7 +4263,10 @@
   "ccn3": "626",
   "pob": 150000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "ID"
+  ]
  },
  {
   "id": "TG",
@@ -3389,7 +4282,12 @@
   "ccn3": "768",
   "pob": 2188376,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BF",
+   "BJ",
+   "GH"
+  ]
  },
  {
   "id": "TO",
@@ -3407,7 +4305,8 @@
   "ccn3": "776",
   "pob": 22400,
   "limitado": false,
-  "fuentes": "4/4"
+  "fuentes": "4/4",
+  "vecinos": []
  },
  {
   "id": "TT",
@@ -3427,7 +4326,8 @@
   "ccn3": "780",
   "pob": 49031,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "TN",
@@ -3448,7 +4348,11 @@
   "ccn3": "788",
   "pob": 693210,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "DZ",
+   "LY"
+  ]
  },
  {
   "id": "TM",
@@ -3469,7 +4373,13 @@
   "ccn3": "795",
   "pob": 1030063,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AF",
+   "IR",
+   "KZ",
+   "UZ"
+  ]
  },
  {
   "id": "TR",
@@ -3488,7 +4398,17 @@
   "ccn3": "792",
   "pob": 3517182,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AM",
+   "AZ",
+   "BG",
+   "GE",
+   "GR",
+   "IQ",
+   "IR",
+   "SY"
+  ]
  },
  {
   "id": "TV",
@@ -3504,7 +4424,8 @@
   "ccn3": "798",
   "pob": 6320,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "UA",
@@ -3526,7 +4447,16 @@
   "ccn3": "804",
   "pob": 2952301,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BY",
+   "HU",
+   "MD",
+   "PL",
+   "RO",
+   "RU",
+   "SK"
+  ]
  },
  {
   "id": "UG",
@@ -3542,7 +4472,14 @@
   "ccn3": "800",
   "pob": 1680600,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CD",
+   "KE",
+   "RW",
+   "SS",
+   "TZ"
+  ]
  },
  {
   "id": "UY",
@@ -3558,7 +4495,11 @@
   "ccn3": "858",
   "pob": 1270737,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AR",
+   "BR"
+  ]
  },
  {
   "id": "UZ",
@@ -3578,7 +4519,14 @@
   "ccn3": "860",
   "pob": 1978028,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AF",
+   "KG",
+   "KZ",
+   "TJ",
+   "TM"
+  ]
  },
  {
   "id": "VU",
@@ -3596,7 +4544,8 @@
   "ccn3": "548",
   "pob": 35901,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": []
  },
  {
   "id": "VA",
@@ -3619,7 +4568,10 @@
   "ccn3": "336",
   "pob": 829,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "IT"
+  ]
  },
  {
   "id": "VE",
@@ -3635,7 +4587,12 @@
   "ccn3": "862",
   "pob": 3000000,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BR",
+   "CO",
+   "GY"
+  ]
  },
  {
   "id": "VN",
@@ -3653,7 +4610,12 @@
   "ccn3": "704",
   "pob": 8053663,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "CN",
+   "KH",
+   "LA"
+  ]
  },
  {
   "id": "YE",
@@ -3672,7 +4634,11 @@
   "ccn3": "887",
   "pob": 1937451,
   "limitado": false,
-  "fuentes": "4/4"
+  "fuentes": "4/4",
+  "vecinos": [
+   "OM",
+   "SA"
+  ]
  },
  {
   "id": "DJ",
@@ -3693,7 +4659,12 @@
   "ccn3": "262",
   "pob": 626512,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "ER",
+   "ET",
+   "SO"
+  ]
  },
  {
   "id": "ZM",
@@ -3709,7 +4680,17 @@
   "ccn3": "894",
   "pob": 2212301,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "AO",
+   "BW",
+   "CD",
+   "MW",
+   "MZ",
+   "NA",
+   "TZ",
+   "ZW"
+  ]
  },
  {
   "id": "ZW",
@@ -3727,6 +4708,12 @@
   "ccn3": "716",
   "pob": 1542813,
   "limitado": false,
-  "fuentes": "5/5"
+  "fuentes": "5/5",
+  "vecinos": [
+   "BW",
+   "MZ",
+   "ZA",
+   "ZM"
+  ]
  }
 ]

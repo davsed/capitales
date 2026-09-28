@@ -22,7 +22,7 @@
     },
   };
 
-  const { normalizar, variantes, capitalDe, paisDe, evaluar, ARTICULO } = window.TABLA;
+  const { normalizar, variantes, capitalDe, paisDe, evaluar, distanciaKm, ARTICULO } = window.TABLA;
 
   /* ------------------------------------------------------------------
      Utilidades
@@ -45,6 +45,10 @@
     if (n >= 1e6) return `${(n / 1e6).toLocaleString("es-ES", { maximumFractionDigits: 1 })} millones de habitantes`;
     return `${formatoNumero(Math.round(n / 1000) * 1000)} habitantes`;
   }
+  /** Kilómetros redondeados para leer: 3 km, 880 km, 10.470 km. */
+  const formatoKm = (km) => (km < 100 ? Math.max(1, Math.round(km)) : Math.round(km / 10) * 10).toLocaleString("es-ES");
+  /** «y» pasa a «e» ante palabras que empiezan por el sonido /i/ (Alemania e Italia). */
+  const yE = (siguiente) => (/^h?i(?![aeouáéóú])/i.test(normalizar(siguiente)) ? "e" : "y");
   const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const anunciar = (texto) => { $("#anuncio").textContent = texto; };
 
@@ -241,12 +245,61 @@
       camino.dataset.id = id;
       mapaSvg.appendChild(camino);
     }
+    // Capas superiores: ruta entre capitales (solo al confundir países) y chinchetas.
+    const ruta = document.createElementNS(NS, "path");
+    ruta.setAttribute("class", "ruta-error");
     const onda = document.createElementNS(NS, "circle");
     onda.setAttribute("class", "onda-pin");
     const pin = document.createElementNS(NS, "circle");
     pin.setAttribute("class", "pin");
-    mapaSvg.append(onda, pin);
+    const pinOtro = document.createElementNS(NS, "circle");
+    pinOtro.setAttribute("class", "pin-otro");
+    mapaSvg.append(ruta, onda, pin, pinOtro);
     mapaListo = true;
+  }
+
+  /** Proyección Natural Earth, la misma de scripts/construir_mapa.mjs, para situar puntos nuevos. */
+  function proyectar(lon, lat) {
+    const { k, tx, ty } = MAPA.proy;
+    const l = (lon * Math.PI) / 180;
+    const f = (lat * Math.PI) / 180;
+    const f2 = f * f, f4 = f2 * f2;
+    const x = l * (0.8707 - 0.131979 * f2 + f4 * (-0.013791 + f4 * (0.003971 * f2 - 0.001529 * f4)));
+    const y = f * (1.007226 + f2 * (0.015085 + f4 * (-0.044475 + 0.028874 * f2 - 0.005916 * f4)));
+    return [tx + k * x, ty - k * y];
+  }
+
+  /** Ruta más corta (círculo máximo) entre dos capitales, proyectada y partida si cruza el antimeridiano. */
+  function rutaEntre(a, b, pasos = 48) {
+    const rad = Math.PI / 180;
+    const vector = (x) => [Math.cos(x.lat * rad) * Math.cos(x.lon * rad), Math.cos(x.lat * rad) * Math.sin(x.lon * rad), Math.sin(x.lat * rad)];
+    const v0 = vector(a), v1 = vector(b);
+    const d = distanciaKm(a, b) / 6371; // ángulo entre ambas capitales
+    const tramos = [[]];
+    let previo = null;
+    for (let i = 0; i <= pasos; i++) {
+      const t = i / pasos;
+      const A = d ? Math.sin((1 - t) * d) / Math.sin(d) : 1 - t;
+      const B = d ? Math.sin(t * d) / Math.sin(d) : t;
+      const [x, y, z] = [0, 1, 2].map((j) => A * v0[j] + B * v1[j]);
+      const punto = proyectar(Math.atan2(y, x) / rad, Math.atan2(z, Math.hypot(x, y)) / rad);
+      if (previo && Math.abs(punto[0] - previo[0]) > MAPA.w / 2) tramos.push([]);
+      tramos[tramos.length - 1].push(punto);
+      previo = punto;
+    }
+    return tramos;
+  }
+
+  /** Vista que abarca varias vistas y puntos, con la proporción del mapa. */
+  function unirVistas(vistas, puntos) {
+    const RATIO = 1.6;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y, w, h] of vistas) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); }
+    for (const [x, y] of puntos) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    let w = (x1 - x0) * 1.08, h = (y1 - y0) * 1.08;
+    if (w / h < RATIO) w = h * RATIO; else h = w / RATIO;
+    if (w > MAPA.w) { w = MAPA.w; h = w / RATIO; }
+    return [(x0 + x1) / 2 - w / 2, (y0 + y1) / 2 - h / 2, w, h];
   }
   // Países cuya caja cruza el antimeridiano o es enorme: se centra en una vista fija.
   const VISTAS_ESPECIALES = { RU: [300, 20, 640, 400], US: [40, 60, 470, 294], FJ: null, KI: null, NZ: null, TV: null, TO: null, WS: null };
@@ -268,17 +321,30 @@
     const h = w / RATIO;
     return [x - w / 2, y - h / 2, w, h];
   }
-  function mostrarMapa(p) {
+  /** Sitúa el país correcto y, si el jugador lo confundió con otro, también ese otro y la ruta entre ambos. */
+  function mostrarMapa(p, otro = null) {
     construirMapa();
-    mapaSvg.querySelectorAll(".destino").forEach((e) => e.classList.remove("destino"));
-    const forma = mapaSvg.querySelector(`.pais[data-id="${p.id}"]`);
-    if (forma) { forma.classList.add("destino"); mapaSvg.insertBefore(forma, mapaSvg.querySelector(".onda-pin")); }
-    const destino = vistaDe(p.id);
-    const [cx, cy] = MAPA.capitales[p.id];
-    const r = Math.max(destino[2] / 110, 1.2);
-    for (const c of mapaSvg.querySelectorAll(".pin, .onda-pin")) {
-      c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r);
+    mapaSvg.querySelectorAll(".destino, .confundido").forEach((e) => e.classList.remove("destino", "confundido"));
+    const capas = mapaSvg.querySelector(".ruta-error");
+    for (const [x, clase] of [[otro, "confundido"], [p, "destino"]]) {
+      const forma = x && mapaSvg.querySelector(`.pais[data-id="${x.id}"]`);
+      if (forma) { forma.classList.add(clase); mapaSvg.insertBefore(forma, capas); }
     }
+    let destino = vistaDe(p.id);
+    const ruta = mapaSvg.querySelector(".ruta-error");
+    const pinOtro = mapaSvg.querySelector(".pin-otro");
+    ruta.toggleAttribute("hidden", !otro);
+    pinOtro.toggleAttribute("hidden", !otro);
+    if (otro) {
+      const tramos = rutaEntre(otro, p);
+      ruta.setAttribute("d", tramos.map((t) => "M" + t.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L")).join(""));
+      // Si la ruta cruza el antimeridiano se enseña el mundo entero.
+      destino = tramos.length > 1 ? [0, 0, MAPA.w, MAPA.h] : unirVistas([destino, vistaDe(otro.id)], tramos[0]);
+    }
+    const r = Math.max(destino[2] / 110, 1.2);
+    const colocar = (c, [cx, cy]) => { c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r); };
+    for (const c of mapaSvg.querySelectorAll(".pin, .onda-pin")) colocar(c, MAPA.capitales[p.id]);
+    if (otro) colocar(pinOtro, MAPA.capitales[otro.id]);
     // Zoom animado: primero se aleja un poco y luego se acerca al destino.
     cancelAnimationFrame(animMapa);
     const inicio = [...vistaActual];
@@ -293,7 +359,10 @@
       if (t < 1) animMapa = requestAnimationFrame(tick);
     };
     animMapa = requestAnimationFrame(tick);
-    $("#mapa-pie").textContent = `${p.capital}, ${p.pais} · ${CONTINENTES[p.cont]}`;
+    $("#mapa-pie").innerHTML = otro
+      ? `<span class="leyenda destino"></span>${escapar(p.capital)}, ${escapar(p.pais)} ` +
+        `<span class="leyenda confundido"></span>${escapar(otro.capital)}, ${escapar(otro.pais)} · unos ${formatoKm(distanciaKm(otro, p))} km`
+      : `${escapar(p.capital)}, ${escapar(p.pais)} · ${escapar(CONTINENTES[p.cont])}`;
   }
 
   /* ------------------------------------------------------------------
@@ -431,6 +500,9 @@
      Ronda
      ------------------------------------------------------------------ */
   let ronda = null;
+  // Tiempo que se ve la respuesta antes de pasar sola a la siguiente: un fallo, el doble que un acierto.
+  const PAUSA_ACIERTO = 2600;
+  const PAUSA_FALLO = PAUSA_ACIERTO * 2;
   let temporizadorSiguiente = 0;
   let temporizadorReloj = 0;
   let temporizadorCrono = 0;
@@ -686,23 +758,34 @@
         detalle = `Has escrito ${escrito}. No es correcto.`;
       }
     }
+    // Si la respuesta es otro país (o la capital de otro), se dice a qué distancia está del correcto.
+    const otro = res.ok ? null
+      : res.eleccion || [res.comoCapital, res.comoPais].find((x) => x && x !== p) || null;
+    let distancia = "";
+    if (otro) {
+      const km = formatoKm(distanciaKm(otro, p));
+      const vecinos = (p.vecinos || []).includes(otro.id);
+      distancia = `Entre ${escapar(otro.pais)} ${yE(p.pais)} ${escapar(p.pais)} hay unos <strong>${km} km</strong> ` +
+        `(de ${escapar(otro.capital)} a ${escapar(p.capital)})${vecinos ? ", y son países vecinos" : ""}.`;
+    }
     const extra = [formatoPoblacion(p.pob), CONTINENTES[p.cont]].filter(Boolean).join(" · ");
     v.innerHTML =
       `<p class="par">${par}</p>` +
       `<p class="detalle">${detalle}</p>` +
+      (distancia ? `<p class="detalle distancia">${distancia}</p>` : "") +
       (extra ? `<p class="detalle">${escapar(p.capital)}: ${escapar(extra)}</p>` : "") +
       (p.nota ? `<p class="nota">${escapar(p.nota)}</p>` : "");
 
     $("#revelado").hidden = false;
     mostrarFoto(p);
-    mostrarMapa(p);
+    mostrarMapa(p, otro);
     if (!esPais) { const b = $("#bandera-pregunta"); b.src = rutaBandera(p.id); b.alt = `Bandera de ${p.pais}`; b.hidden = false; }
 
     const btn = $("#btn-siguiente");
     btn.querySelector("span").textContent = ronda.i + 1 >= ronda.preguntas.length ? "Ver resultado" : "Siguiente";
     btn.focus({ preventScroll: true });
     $("#revelado").scrollIntoView({ behavior: movimientoReducido ? "auto" : "smooth", block: "nearest" });
-    programarSiguiente(res.ok ? 2600 : 5200);
+    programarSiguiente(res.ok ? PAUSA_ACIERTO : PAUSA_FALLO);
   }
 
   function mostrarFoto(p) {
@@ -994,7 +1077,7 @@
     if (!$("#pantalla-juego").hidden) { detenerRonda(); ronda = null; }
     window.Muro.abrir();
   });
-  window.JUEGO = { mostrarPantalla };
+  window.JUEGO = { mostrarPantalla, proyectar };
   const botonSonido = $("#btn-sonido");
   function pintarBotonSonido() {
     botonSonido.setAttribute("aria-pressed", String(sonido.activo));
