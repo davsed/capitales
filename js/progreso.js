@@ -9,10 +9,13 @@
   /** Aciertos seguidos que hacen falta para dominar un país. */
   const OBJETIVO = 3;
   /**
-   * Preguntas que tienen que pasar antes de volver a preguntar un país, según cómo fue la última vez:
-   * un fallo vuelve pronto; con un acierto, más tarde; con dos, más tarde todavía.
+   * La maratón va por vueltas: en cada vuelta salen, en un orden aleatorio nuevo, todos los países que
+   * quedan por dominar. Un país acertado espera a la vuelta siguiente; uno fallado vuelve dentro de la
+   * misma vuelta, entre estas posiciones más adelante (al azar).
    */
-  const HUECOS = { 0: 3, 1: 6, 2: 14 };
+  const REPETIR_FALLO = [3, 8];
+  /** Países distintos que tienen que salir, como mínimo, entre dos apariciones del mismo país. */
+  const SEPARACION = 3;
   const MAX_HISTORIAL = 500;
 
   const esObjeto = (x) => !!x && typeof x === "object" && !Array.isArray(x);
@@ -26,13 +29,23 @@
      ------------------------------------------------------------------ */
   function crearMaraton({ ids, dir, modo, zona, taiwan = false }, ahora = new Date()) {
     const paises = {};
-    for (const id of ids) paises[id] = { racha: 0, proxima: null, aciertos: 0, fallos: 0 };
+    for (const id of ids) paises[id] = { racha: 0, aciertos: 0, fallos: 0 };
     return {
       version: VERSION, creada: ahora.toISOString(), actualizada: ahora.toISOString(),
       dir, modo, zona, taiwan: !!taiwan,
-      turno: 0, aciertos: 0, fallos: 0, segundos: 0, ultimo: null, paises,
+      turno: 0, aciertos: 0, fallos: 0, segundos: 0, ultimo: null, recientes: [], vuelta: 0, cola: [], paises,
     };
   }
+
+  function barajar(lista, azar) {
+    const a = [...lista];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(azar() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const entre = ([min, max], azar) => min + Math.floor(azar() * (max - min + 1));
 
   const pendientes = (m) => Object.keys(m.paises).filter((id) => m.paises[id].racha < OBJETIVO);
   const total = (m) => Object.keys(m.paises).length;
@@ -41,26 +54,49 @@
   const enCamino = (m) => Object.values(m.paises).filter((e) => e.racha > 0 && e.racha < OBJETIVO).length;
 
   /**
-   * Elige el país de la siguiente pregunta:
-   * 1. los que ya toca repasar (los más atrasados primero, con algo de azar entre ellos);
-   * 2. si no toca ninguno, uno nuevo al azar;
-   * 3. si no quedan nuevos y aún no toca ninguno (grupos pequeños), el que antes toque.
-   * Nunca repite el mismo país dos veces seguidas si queda otro.
+   * Deja lista la cola de la vuelta en curso: quita los países ya dominados y, si la vuelta se ha
+   * acabado (o le quedan tan pocos que no se pueden separar), empieza otra con los que quedan en un orden
+   * aleatorio nuevo. Aparta del principio los países que acaban de salir, para que entre dos apariciones
+   * del mismo país salgan al menos SEPARACION países distintos (o todos los que queden, si son menos).
    */
-  function siguienteId(m, azar = Math.random) {
+  function prepararCola(m, azar) {
     const pend = pendientes(m);
-    if (!pend.length) return null;
-    const otros = pend.length > 1 ? pend.filter((id) => id !== m.ultimo) : pend;
-    const vistos = otros.filter((id) => m.paises[id].proxima !== null)
-      .sort((a, b) => m.paises[a].proxima - m.paises[b].proxima);
-    const tocan = vistos.filter((id) => m.paises[id].proxima <= m.turno);
-    if (tocan.length) {
-      const grupo = tocan.slice(0, 3);
-      return grupo[Math.floor(azar() * grupo.length)];
-    }
-    const nuevos = otros.filter((id) => m.paises[id].proxima === null);
-    if (nuevos.length) return nuevos[Math.floor(azar() * nuevos.length)];
-    return vistos[0];
+    const quedan = new Set(pend);
+    const k = Math.min(SEPARACION, pend.length - 1);
+    const recientes = (Array.isArray(m.recientes) ? m.recientes : m.ultimo ? [m.ultimo] : [])
+      .filter((id) => quedan.has(id)).slice(0, k);
+    m.cola = [...new Set(Array.isArray(m.cola) ? m.cola : [])].filter((id) => quedan.has(id));
+    // Posición mínima de cada país que acaba de salir: el último necesita k países por delante;
+    // el penúltimo ya tiene uno entre medias, así que le bastan k − 1; y así sucesivamente.
+    const minimo = new Map(recientes.map((id, q) => [id, k - q]));
+    const posMin = (id) => minimo.get(id) || 0;
+    // Coloca los primeros puestos uno a uno: en cada hueco, el primer país de la cola que ya puede ir ahí.
+    const ordenar = (cola) => {
+      const delante = [], resto = [...cola];
+      while (resto.length && delante.length < k) {
+        const i = resto.findIndex((id) => posMin(id) <= delante.length);
+        if (i < 0) return null;
+        delante.push(resto.splice(i, 1)[0]);
+      }
+      return [...delante, ...resto];
+    };
+    const encadenar = () => {
+      const enCola = new Set(m.cola);
+      m.cola = [...m.cola, ...barajar(pend.filter((id) => !enCola.has(id)), azar)];
+      m.vuelta = (m.vuelta || 0) + 1;
+    };
+    if (!m.cola.length) encadenar();
+    let ordenada = ordenar(m.cola);
+    // Si la vuelta es tan corta que no deja separar a los que acaban de salir, se encadena la siguiente.
+    if (!ordenada && pend.length > m.cola.length) { encadenar(); ordenada = ordenar(m.cola); }
+    m.cola = ordenada || [...m.cola].sort((a, b) => posMin(a) - posMin(b));
+  }
+
+  /** País de la siguiente pregunta (o null si ya están todos dominados). */
+  function siguienteId(m, azar = Math.random) {
+    if (!pendientes(m).length) return null;
+    prepararCola(m, azar);
+    return m.cola[0];
   }
 
   /**
@@ -72,6 +108,7 @@
     const e = m.paises[id];
     const antes = e.racha;
     m.turno++;
+    m.cola = (Array.isArray(m.cola) ? m.cola : []).filter((x) => x !== id);
     if (resultado === "fallo") {
       e.racha = 0;
       e.fallos++;
@@ -81,10 +118,11 @@
       m.aciertos++;
       if (resultado === "acierto") e.racha = Math.min(OBJETIVO, e.racha + 1);
     }
-    const hueco = HUECOS[e.racha] ?? HUECOS[0];
-    e.proxima = m.turno + Math.max(2, Math.round(hueco * (0.8 + azar() * 0.4)));
+    // Fallado: vuelve dentro de esta vuelta, unas preguntas más adelante. Acertado: espera a la siguiente vuelta.
+    if (resultado === "fallo") m.cola.splice(Math.min(m.cola.length, entre(REPETIR_FALLO, azar)), 0, id);
     if (e.racha >= OBJETIVO && antes < OBJETIVO) e.dominado = ahora.toISOString();
     m.ultimo = id;
+    m.recientes = [id, ...(Array.isArray(m.recientes) ? m.recientes : []).filter((x) => x !== id)].slice(0, SEPARACION);
     m.actualizada = ahora.toISOString();
     return { antes, despues: e.racha, dominado: e.racha >= OBJETIVO };
   }
@@ -126,7 +164,6 @@
       if (!idsValidos.has(id) || !esObjeto(e)) continue;
       paises[id] = {
         racha: entero(e.racha, 0, OBJETIVO),
-        proxima: e.proxima === null || e.proxima === undefined ? null : entero(e.proxima, 0, 1e7),
         aciertos: entero(e.aciertos, 0, 1e7),
         fallos: entero(e.fallos, 0, 1e7),
         ...(typeof e.dominado === "string" ? { dominado: e.dominado } : {}),
@@ -139,7 +176,12 @@
       actualizada: typeof m.actualizada === "string" ? m.actualizada : new Date().toISOString(),
       dir: m.dir, modo: m.modo, zona: m.zona.slice(0, 40), taiwan: !!m.taiwan,
       turno: entero(m.turno, 0, 1e7), aciertos: entero(m.aciertos, 0, 1e7), fallos: entero(m.fallos, 0, 1e7),
-      segundos: entero(m.segundos, 0, 1e9), ultimo: idsValidos.has(m.ultimo) ? m.ultimo : null, paises,
+      segundos: entero(m.segundos, 0, 1e9), ultimo: idsValidos.has(m.ultimo) ? m.ultimo : null,
+      recientes: Array.isArray(m.recientes) ? m.recientes.filter((id) => idsValidos.has(id)).slice(0, SEPARACION) : [],
+      vuelta: entero(m.vuelta, 0, 1e6),
+      // Las maratones guardadas antes de las vueltas no traen cola: empiezan una vuelta nueva al seguir.
+      cola: Array.isArray(m.cola) ? [...new Set(m.cola)].filter((id) => paises[id] && paises[id].racha < OBJETIVO) : [],
+      paises,
     };
   }
 
@@ -175,7 +217,7 @@
   }
 
   global.PROGRESO = {
-    VERSION, OBJETIVO, HUECOS, MAX_HISTORIAL,
+    VERSION, OBJETIVO, REPETIR_FALLO, SEPARACION, MAX_HISTORIAL,
     crearMaraton, siguienteId, registrarRespuesta, pendientes, dominados, enCamino, total,
     masFallados, resumenMaraton, exportar, validar,
   };

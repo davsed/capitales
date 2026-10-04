@@ -674,7 +674,7 @@
     $("#mc-barra-cam").style.width = (cam / total) * 100 + "%";
     const pct = m.turno ? Math.round((m.aciertos / m.turno) * 100) : 0;
     $("#mc-datos").textContent = m.turno
-      ? `${formatoNumero(m.turno)} preguntas · ${pct} % de aciertos · ${formatoDuracion(m.segundos)} jugando · empezada ${hace(m.creada)}`
+      ? `${m.vuelta ? `Vuelta ${m.vuelta} · ` : ""}${formatoNumero(m.turno)} preguntas · ${pct} % de aciertos · ${formatoDuracion(m.segundos)} jugando · empezada ${hace(m.creada)}`
       : `Empezada ${hace(m.creada)}. Aún no has respondido ninguna pregunta.`;
   }
   $("#btn-continuar-maraton").addEventListener("click", () => { const m = leerMaraton(); if (m) empezarMaraton(m); });
