@@ -107,11 +107,17 @@
      Tablero de fichas (split-flap)
      ------------------------------------------------------------------ */
   const ALFABETO = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
-  function pintarTablero(el, texto, { anchoMax = 46, conSonido = true, unaLinea = false } = {}) {
+  function pintarTablero(el, texto, { anchoMax = 46, conSonido = true, unaLinea = false, preferirLinea = false } = {}) {
     const palabras = texto.toUpperCase().split(/\s+/).filter(Boolean);
     const larga = unaLinea ? Math.max(texto.length + 0.5 * (palabras.length - 1), 8) : Math.max(...palabras.map((w) => w.length), 6);
     const disponible = (el.clientWidth || 600) - (unaLinea ? 0 : 36);
-    const ancho = Math.max(unaLinea ? 8 : 14, Math.min(anchoMax, Math.floor(disponible / (larga + 0.6)) - 3));
+    let ancho = Math.max(unaLinea ? 8 : 14, Math.min(anchoMax, Math.floor(disponible / (larga + 0.6)) - 3));
+    if (preferirLinea) {
+      // En una sola línea si cabe con fichas de buen tamaño (3 px entre letras y 0,45 fichas entre palabras)
+      const letras = palabras.join("").length;
+      const enLinea = Math.floor((disponible - (letras - palabras.length) * 3) / (letras + 0.45 * (palabras.length - 1)));
+      if (enLinea >= 30) ancho = Math.min(anchoMax, enLinea);
+    }
     el.style.setProperty("--ficha-w", ancho + "px");
     el.textContent = "";
     el.setAttribute("aria-label", texto);
@@ -246,7 +252,9 @@
   const mapaSvg = $("#mapa");
   let mapaListo = false;
   let vistaActual = [0, 0, MAPA.w, MAPA.h];
+  let vistaPais = null; // vista del país de la pregunta, para el botón «Volver al país»
   let animMapa = 0;
+  let chinchetas = [];
   function construirMapa() {
     if (mapaListo) return;
     const fondo = document.createElementNS(NS, "path");
@@ -270,8 +278,108 @@
     const pinOtro = document.createElementNS(NS, "circle");
     pinOtro.setAttribute("class", "pin-otro");
     mapaSvg.append(ruta, onda, pin, pinOtro);
+    chinchetas = [onda, pin, pinOtro];
     mapaListo = true;
   }
+
+  /** Proporción (ancho / alto) con la que se ve ahora el mapa. */
+  const ratioMapa = () => {
+    const w = mapaSvg.clientWidth, h = mapaSvg.clientHeight;
+    return w && h ? w / h : 1.6;
+  };
+  /** Mapa casi entero: el ancho máximo al que se puede alejar. */
+  const anchoMaximo = (ratio) => Math.max(MAPA.w, MAPA.h * ratio) * 1.05;
+  /** Que el centro de la vista no salga del mapa (para no perder el mundo al arrastrar). */
+  function limitar([x, y, w, h]) {
+    const cx = Math.min(Math.max(x + w / 2, 0), MAPA.w);
+    const cy = Math.min(Math.max(y + h / 2, 0), MAPA.h);
+    return [cx - w / 2, cy - h / 2, w, h];
+  }
+  /** Vista que contiene una zona [x, y, ancho, alto] con la proporción real del mapa. */
+  function ajustarVista([x, y, w, h], ratio = ratioMapa()) {
+    const ancho = Math.min(Math.max(w, h * ratio, 12), anchoMaximo(ratio));
+    return limitar([x + w / 2 - ancho / 2, y + h / 2 - ancho / ratio / 2, ancho, ancho / ratio]);
+  }
+  /** Aplica una vista y mantiene las chinchetas del mismo tamaño en pantalla. */
+  function aplicarVista(v) {
+    vistaActual = v;
+    mapaSvg.setAttribute("viewBox", v.map((n) => n.toFixed(2)).join(" "));
+    const r = (5.5 * v[2]) / (mapaSvg.clientWidth || 600);
+    for (const c of chinchetas) c.setAttribute("r", r.toFixed(3));
+  }
+  function animarVista(destino, dur = 700) {
+    cancelAnimationFrame(animMapa);
+    const inicio = [...vistaActual];
+    const t0 = performance.now();
+    const total = movimientoReducido ? 1 : dur;
+    const tick = (ahora) => {
+      const t = Math.min(1, (ahora - t0) / total);
+      const e = 1 - Math.pow(1 - t, 3);
+      aplicarVista(inicio.map((v, i) => v + (destino[i] - v) * e));
+      if (t < 1) animMapa = requestAnimationFrame(tick);
+    };
+    animMapa = requestAnimationFrame(tick);
+  }
+  /** Vista tras acercar (factor < 1) o alejar (> 1) alrededor de un punto del mapa. */
+  function vistaZoom(factor, [px, py], v = vistaActual) {
+    const [x, y, w, h] = v;
+    const ratio = w / h;
+    const ancho = Math.min(Math.max(w * factor, 12), anchoMaximo(ratio));
+    const f = ancho / w;
+    return limitar([px - (px - x) * f, py - (py - y) * f, ancho, ancho / ratio]);
+  }
+  function puntoMapa(clientX, clientY) {
+    const r = mapaSvg.getBoundingClientRect();
+    return [vistaActual[0] + ((clientX - r.left) / r.width) * vistaActual[2], vistaActual[1] + ((clientY - r.top) / r.height) * vistaActual[3]];
+  }
+  const centroVista = () => [vistaActual[0] + vistaActual[2] / 2, vistaActual[1] + vistaActual[3] / 2];
+
+  // Navegación: arrastrar con el ratón o un dedo, rueda, pellizco y botones. Tocar el mapa pausa el avance.
+  const punteros = new Map();
+  mapaSvg.addEventListener("pointerdown", (e) => {
+    if (!mapaListo) return;
+    cancelAnimationFrame(animMapa);
+    pausar();
+    mapaSvg.setPointerCapture(e.pointerId);
+    punteros.set(e.pointerId, [e.clientX, e.clientY]);
+    mapaSvg.classList.add("arrastrando");
+  });
+  mapaSvg.addEventListener("pointermove", (e) => {
+    const antes = punteros.get(e.pointerId);
+    if (!antes) return;
+    if (punteros.size === 1) {
+      const k = vistaActual[2] / (mapaSvg.clientWidth || 600);
+      const [x, y, w, h] = vistaActual;
+      aplicarVista(limitar([x - (e.clientX - antes[0]) * k, y - (e.clientY - antes[1]) * k, w, h]));
+    } else {
+      const otro = [...punteros].find(([id]) => id !== e.pointerId)[1];
+      const dAntes = Math.hypot(antes[0] - otro[0], antes[1] - otro[1]);
+      const dAhora = Math.hypot(e.clientX - otro[0], e.clientY - otro[1]);
+      if (dAntes && dAhora) aplicarVista(vistaZoom(dAntes / dAhora, puntoMapa((e.clientX + otro[0]) / 2, (e.clientY + otro[1]) / 2)));
+    }
+    punteros.set(e.pointerId, [e.clientX, e.clientY]);
+  });
+  const soltar = (e) => {
+    punteros.delete(e.pointerId);
+    if (!punteros.size) mapaSvg.classList.remove("arrastrando");
+  };
+  mapaSvg.addEventListener("pointerup", soltar);
+  mapaSvg.addEventListener("pointercancel", soltar);
+  mapaSvg.addEventListener("wheel", (e) => {
+    if (!mapaListo) return;
+    e.preventDefault();
+    cancelAnimationFrame(animMapa);
+    pausar();
+    const delta = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+    aplicarVista(vistaZoom(Math.pow(1.0018, delta), puntoMapa(e.clientX, e.clientY)));
+  }, { passive: false });
+  mapaSvg.addEventListener("dblclick", (e) => animarVista(vistaZoom(0.5, puntoMapa(e.clientX, e.clientY)), 300));
+  $("#mapa-mas").addEventListener("click", () => { pausar(); animarVista(vistaZoom(0.6, centroVista()), 300); });
+  $("#mapa-menos").addEventListener("click", () => { pausar(); animarVista(vistaZoom(1 / 0.6, centroVista()), 300); });
+  $("#mapa-mundo").addEventListener("click", () => { pausar(); animarVista(ajustarVista([0, 0, MAPA.w, MAPA.h])); });
+  $("#mapa-pais").addEventListener("click", () => { pausar(); if (vistaPais) animarVista(ajustarVista(vistaPais)); });
+  // Si cambia el tamaño del mapa (ventana, móvil girado), se mantiene lo que se estaba viendo.
+  if (window.ResizeObserver) new ResizeObserver(() => { if (mapaListo && mapaSvg.clientWidth) aplicarVista(ajustarVista(vistaActual)); }).observe(mapaSvg);
 
   /** Proyección Natural Earth, la misma de scripts/construir_mapa.mjs, para situar puntos nuevos. */
   function proyectar(lon, lat) {
@@ -305,36 +413,28 @@
     return tramos;
   }
 
-  /** Vista que abarca varias vistas y puntos, con la proporción del mapa. */
+  /** Zona que abarca varias zonas y puntos, con un poco de margen. */
   function unirVistas(vistas, puntos) {
-    const RATIO = 1.6;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const [x, y, w, h] of vistas) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); }
     for (const [x, y] of puntos) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
-    let w = (x1 - x0) * 1.08, h = (y1 - y0) * 1.08;
-    if (w / h < RATIO) w = h * RATIO; else h = w / RATIO;
-    if (w > MAPA.w) { w = MAPA.w; h = w / RATIO; }
+    const w = (x1 - x0) * 1.08, h = (y1 - y0) * 1.08;
     return [(x0 + x1) / 2 - w / 2, (y0 + y1) / 2 - h / 2, w, h];
   }
-  // Países cuya caja cruza el antimeridiano o es enorme: se centra en una vista fija.
+  // Países cuya caja cruza el antimeridiano o es enorme: se centra en una zona fija.
   const VISTAS_ESPECIALES = { RU: [300, 20, 640, 400], US: [40, 60, 470, 294], FJ: null, KI: null, NZ: null, TV: null, TO: null, WS: null };
+  /** Zona del mapa que enseña un país con algo de contexto alrededor (se ajusta luego a la proporción del mapa). */
   function vistaDe(id) {
-    const RATIO = 1.6;
     if (VISTAS_ESPECIALES[id]) return VISTAS_ESPECIALES[id];
     const [cx, cy] = MAPA.capitales[id];
     const caja = MAPA.cajas[id];
-    let x, y, w;
     if (!caja || id in VISTAS_ESPECIALES || caja[2] - caja[0] > 450) {
-      w = caja && caja[2] - caja[0] > 450 ? 220 : 110;
-      x = cx; y = cy;
-    } else {
-      const bw = caja[2] - caja[0], bh = caja[3] - caja[1];
-      w = Math.max(bw * 1.9, bh * 1.9 * RATIO, 70);
-      x = (caja[0] + caja[2]) / 2; y = (caja[1] + caja[3]) / 2;
+      const w = caja && caja[2] - caja[0] > 450 ? 240 : 150;
+      return [cx - w / 2, cy - w / 3.2, w, w / 1.6];
     }
-    w = Math.min(w, MAPA.w);
-    const h = w / RATIO;
-    return [x - w / 2, y - h / 2, w, h];
+    const w = Math.max((caja[2] - caja[0]) * 2.4, 120);
+    const h = Math.max((caja[3] - caja[1]) * 2.4, 75);
+    return [(caja[0] + caja[2]) / 2 - w / 2, (caja[1] + caja[3]) / 2 - h / 2, w, h];
   }
   /** Sitúa el país correcto y, si el jugador lo confundió con otro, también ese otro y la ruta entre ambos. */
   function mostrarMapa(p, otro = null) {
@@ -356,24 +456,12 @@
       // Si la ruta cruza el antimeridiano se enseña el mundo entero.
       destino = tramos.length > 1 ? [0, 0, MAPA.w, MAPA.h] : unirVistas([destino, vistaDe(otro.id)], tramos[0]);
     }
-    const r = Math.max(destino[2] / 110, 1.2);
-    const colocar = (c, [cx, cy]) => { c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r); };
+    const colocar = (c, [cx, cy]) => { c.setAttribute("cx", cx); c.setAttribute("cy", cy); };
     for (const c of mapaSvg.querySelectorAll(".pin, .onda-pin")) colocar(c, MAPA.capitales[p.id]);
     if (otro) colocar(pinOtro, MAPA.capitales[otro.id]);
-    // Zoom animado: primero se aleja un poco y luego se acerca al destino.
-    cancelAnimationFrame(animMapa);
-    const inicio = [...vistaActual];
-    const t0 = performance.now();
-    const dur = movimientoReducido ? 1 : 1100;
-    const suave = (t) => 1 - Math.pow(1 - t, 3);
-    const tick = (ahora) => {
-      const t = Math.min(1, (ahora - t0) / dur);
-      const e = suave(t);
-      vistaActual = inicio.map((v, i) => v + (destino[i] - v) * e);
-      mapaSvg.setAttribute("viewBox", vistaActual.map((v) => v.toFixed(2)).join(" "));
-      if (t < 1) animMapa = requestAnimationFrame(tick);
-    };
-    animMapa = requestAnimationFrame(tick);
+    vistaPais = destino;
+    aplicarVista(ajustarVista(vistaActual)); // por si el mapa ha cambiado de tamaño
+    animarVista(ajustarVista(destino), 1100);
     $("#mapa-pie").innerHTML = otro
       ? `<span class="leyenda destino"></span>${escapar(p.capital)}, ${escapar(p.pais)} ` +
         `<span class="leyenda confundido"></span>${escapar(otro.capital)}, ${escapar(otro.pais)} · unos ${formatoKm(distanciaKm(otro, p))} km`
@@ -546,6 +634,7 @@
   const pantallas = ["inicio", "juego", "final", "tabla", "muro"];
   const NAV = { tabla: "#nav-tabla", muro: "#nav-muro" };
   function mostrarPantalla(nombre) {
+    document.body.classList.toggle("modo-juego", nombre === "juego");
     for (const p of pantallas) $("#pantalla-" + p).hidden = p !== nombre;
     for (const sel of ["#nav-jugar", "#nav-tabla", "#nav-muro"]) $(sel).removeAttribute("aria-current");
     $(NAV[nombre] || "#nav-jugar").setAttribute("aria-current", "page");
@@ -557,9 +646,26 @@
      Ronda
      ------------------------------------------------------------------ */
   let ronda = null;
+  // El tiempo solo corre mientras el juego espera tu respuesta: se para al responder y al cambiar de pestaña.
+  const MAX_PENSAR = 5 * 60 * 1000; // más de 5 minutos en una sola pregunta ya no cuenta
+  const tiempoJugado = (r) => r.activo + (r.desde ? Math.min(performance.now() - r.desde, MAX_PENSAR) : 0);
+  function arrancarCrono() { if (ronda && !ronda.desde) ronda.desde = performance.now(); }
+  function pararCrono() {
+    if (!ronda || !ronda.desde) return 0;
+    const pensado = Math.min(performance.now() - ronda.desde, MAX_PENSAR);
+    ronda.activo += pensado;
+    ronda.desde = null;
+    return pensado;
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!ronda || $("#pantalla-juego").hidden) return;
+    if (document.hidden && ronda.desde) { pararCrono(); ronda.oculta = true; }
+    else if (!document.hidden && ronda.oculta) { ronda.oculta = false; if (!ronda.respondida) arrancarCrono(); }
+  });
   // Tiempo que se ve la respuesta antes de pasar sola a la siguiente: un fallo, el doble que un acierto.
   const PAUSA_ACIERTO = 2600;
   const PAUSA_FALLO = PAUSA_ACIERTO * 2;
+  const PAUSA_DOMINADO = 6000; // da tiempo a ver la animación de país dominado
   let temporizadorSiguiente = 0;
   let temporizadorReloj = 0;
   let temporizadorCrono = 0;
@@ -572,7 +678,7 @@
     }));
     ronda = {
       preguntas, i: 0, aciertos: 0, fallos: 0, racha: 0, mejorRacha: 0, puntos: 0,
-      inicio: performance.now(), historial: [], respondida: false, pista: 0, repaso, abandonada: false,
+      activo: 0, desde: null, historial: [], respondida: false, pista: 0, repaso, abandonada: false,
       modalidad: {
         dir: ajustes.dir, modo: ajustes.modo, limite: ajustes.tiempo,
         zona: zonaActual(),
@@ -590,7 +696,7 @@
     $("#hud-de").hidden = maraton;
     $("#btn-abandonar").textContent = maraton ? "Pausar maratón" : "Terminar ronda";
     clearInterval(temporizadorCrono);
-    temporizadorCrono = setInterval(() => { $("#hud-tiempo").textContent = formatoTiempo(performance.now() - ronda.inicio); }, 500);
+    temporizadorCrono = setInterval(() => { if (ronda) $("#hud-tiempo").textContent = formatoTiempo(tiempoJugado(ronda)); }, 250);
     $("#hud-tiempo").textContent = "0:00";
   }
 
@@ -620,10 +726,9 @@
   }
 
   function empezarMaraton(m) {
-    const ahora = performance.now();
     ronda = {
       maraton: m, preguntas: [], i: -1, aciertos: 0, fallos: 0, racha: 0, mejorRacha: 0, puntos: 0,
-      inicio: ahora, marca: ahora, historial: [], respondida: true, pista: 0, repaso: false, abandonada: false,
+      activo: 0, desde: null, historial: [], respondida: true, pista: 0, repaso: false, abandonada: false,
       modalidad: { dir: m.dir, modo: m.modo, limite: ajustes.tiempo, zona: m.zona },
     };
     promesaFotos = precargarFotos(P.pendientes(m).map((id) => PAIS[id].wiki));
@@ -651,7 +756,7 @@
   /** Símbolo de aciertos seguidos: círculo vacío, una diagonal, la otra (X) y el asterisco completo. */
   function pintarContador(racha, { animar = false } = {}) {
     const c = $("#contador-maraton");
-    c.classList.remove("explota", "reinicia");
+    c.classList.remove("explota", "reinicia", "suma");
     if (!animar) c.classList.add("sin-transicion");
     c.dataset.racha = racha;
     const texto = `${racha} de ${P.OBJETIVO} aciertos seguidos`;
@@ -737,11 +842,14 @@
     if (esPais) { bandera.src = rutaBandera(q.p.id); bandera.alt = `Bandera de ${q.p.pais}`; bandera.hidden = false; }
     else bandera.hidden = true;
     $("#sello").hidden = true;
+    $("#caja-pregunta").classList.remove("dominado");
     $("#revelado").hidden = true;
     $("#acciones-pregunta").hidden = false;
     $("#btn-pista").disabled = false;
     $("#texto-pista").hidden = true;
-    pintarTablero($("#tablero"), esPais ? q.p.pais : q.p.capital);
+    // En el ordenador el nombre sale más grande (sin pasarse si la pantalla es baja)
+    const anchoFicha = innerWidth >= 1000 ? (innerHeight >= 820 ? 64 : 54) : 46;
+    pintarTablero($("#tablero"), esPais ? q.p.pais : q.p.capital, { anchoMax: anchoFicha, preferirLinea: true });
     anunciar(`${esPais ? "País" : "Capital"}: ${esPais ? q.p.pais : q.p.capital}`);
 
     if (opciones) {
@@ -760,6 +868,7 @@
     }
     actualizarHud();
     iniciarReloj();
+    arrancarCrono();
   }
 
   function pintarOpciones(q) {
@@ -841,22 +950,26 @@
     const r = ronda;
     const q = r.preguntas[r.i];
     r.respondida = true;
+    const pensado = pararCrono();
+    $("#hud-tiempo").textContent = formatoTiempo(tiempoJugado(r));
     clearInterval(temporizadorReloj);
     let ganados = 0;
     if (r.maraton) {
       // Maratón: suma el acierto (con pista no suma), un fallo vuelve a 0, y se guarda al momento.
       const m = r.maraton;
-      const ahora = performance.now();
-      m.segundos += Math.min(120, (ahora - r.marca) / 1000); // sin contar ratos con la pestaña olvidada
-      r.marca = ahora;
+      m.segundos += pensado / 1000;
       q.cambio = P.registrarRespuesta(m, q.p.id, res.ok ? (r.pista ? "pista" : "acierto") : "fallo");
       guardarMaraton(m);
       pintarContador(q.cambio.despues, { animar: true });
       const c = $("#contador-maraton");
+      if (q.cambio.despues > q.cambio.antes && !q.cambio.dominado) c.classList.add("suma");
       if (!res.ok && q.cambio.antes > 0 && !q.cambio.relleno) c.classList.add("reinicia");
       if (q.cambio.dominado) {
+        // Asterisco completo: gira, brilla, estalla tres veces y se queda latiendo con «¡Dominado!» (unos 3 segundos)
         c.classList.add("explota");
-        setTimeout(() => { confeti(120, c); sonido.fanfarria(); }, 450);
+        $("#caja-pregunta").classList.add("dominado");
+        setTimeout(() => { confeti(90, c); sonido.fanfarria(); }, 800);
+        setTimeout(() => confeti(170, c), 2100);
       }
     }
     if (res.ok) {
@@ -991,7 +1104,7 @@
     btn.querySelector("span").textContent = ultima ? "Ver resultado" : "Siguiente";
     btn.focus({ preventScroll: true });
     $("#revelado").scrollIntoView({ behavior: movimientoReducido ? "auto" : "smooth", block: "nearest" });
-    programarSiguiente(res.ok ? PAUSA_ACIERTO : PAUSA_FALLO);
+    programarSiguiente(!res.ok ? PAUSA_FALLO : q.cambio && q.cambio.dominado ? PAUSA_DOMINADO : PAUSA_ACIERTO);
   }
 
   function mostrarFoto(p) {
@@ -1007,6 +1120,7 @@
       img.onerror = null;
       img.alt = `Bandera de ${p.pais}`;
       img.src = rutaBandera(p.id);
+      fotoGrande = img.src;
       pie.textContent = `Bandera de ${p.pais}`;
     };
     const poner = (dato) => {
@@ -1015,6 +1129,8 @@
       img.onerror = ponerBandera;
       img.alt = `Vista de ${p.capital}`;
       img.src = dato.src;
+      // Las miniaturas de Wikimedia se piden a 800 px; para ampliar, la de 1600 px.
+      fotoGrande = /\/\d+px-[^/]+$/.test(dato.src) ? dato.src.replace(/\/\d+px-([^/]+)$/, "/1600px-$1") : dato.src;
       pie.innerHTML = `${escapar(p.capital)} · Foto: <a href="${dato.url}" target="_blank" rel="noopener">Wikipedia / Wikimedia Commons</a>`;
     };
     if (fotos.has(p.wiki)) { poner(fotos.get(p.wiki)); return; }
@@ -1045,7 +1161,27 @@
     $("#cuenta-atras").classList.remove("activa");
     $("#pausa-aviso").hidden = false;
   }
-  $(".postal").addEventListener("click", (e) => { if (!e.target.closest("a")) pausar(); });
+  // Caja de luz: la foto (o la bandera) al doble de tamaño
+  let fotoGrande = "";
+  function abrirCajaLuz() {
+    const img = $("#foto-img");
+    if (!img.getAttribute("src")) return;
+    pausar();
+    const grande = $("#caja-luz-img");
+    grande.style.width = Math.round($("#foto-ampliar").getBoundingClientRect().width * 2) + "px";
+    grande.alt = img.alt;
+    grande.onerror = () => { grande.onerror = null; grande.src = img.src; }; // si no hay versión grande, la normal
+    grande.src = fotoGrande || img.src;
+    $("#caja-luz-pie").innerHTML = $("#foto-pie").innerHTML;
+    $("#caja-luz").hidden = false;
+    $("#caja-luz-cerrar").focus();
+  }
+  function cerrarCajaLuz() {
+    $("#caja-luz").hidden = true;
+    $("#foto-ampliar").focus({ preventScroll: true });
+  }
+  $("#foto-ampliar").addEventListener("click", abrirCajaLuz);
+  $("#caja-luz").addEventListener("click", (e) => { if (!e.target.closest("a")) cerrarCajaLuz(); });
   $("#veredicto").addEventListener("click", pausar);
 
   function siguiente() {
@@ -1101,7 +1237,8 @@
     clearTimeout(temporizadorSiguiente);
     const total = r.historial.length;
     const pct = total ? Math.round((r.aciertos / total) * 100) : 0;
-    const tiempo = performance.now() - r.inicio;
+    pararCrono();
+    const tiempo = tiempoJugado(r);
     const titulo = pct === 100 ? "Diplomático de carrera" : pct >= 80 ? "Trotamundos" : pct >= 60 ? "Viajero frecuente" : pct >= 40 ? "Turista con mapa" : "Toca repasar el atlas";
     $("#final-titulo").textContent = titulo;
     $("#final-antetitulo").textContent = r.repaso ? "Repaso terminado" : `Ronda terminada · ${TEXTO_DIR[ajustes.dir]}`;
@@ -1238,6 +1375,10 @@
      Teclado
      ------------------------------------------------------------------ */
   document.addEventListener("keydown", (e) => {
+    if (!$("#caja-luz").hidden) {
+      if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); cerrarCajaLuz(); }
+      return;
+    }
     if ($("#pantalla-juego").hidden || !ronda) return;
     if (e.key === "Enter" && ronda.respondida && document.activeElement !== $("#entrada")) {
       e.preventDefault();
