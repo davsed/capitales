@@ -55,7 +55,7 @@ Todo se guarda solo en el navegador (`localStorage`), así que sobrevive a cerra
 - **Descargar mi progreso** baja un archivo `capitales-progreso-AAAA-MM-DD.json` con todo lo anterior.
 - **Cargar mi progreso** lo recupera, por ejemplo en otro ordenador o navegador, o si se han borrado los datos de navegación. Antes de sustituir lo que haya guardado pide confirmación.
 
-La descarga no funciona dentro de claude.ai, que bloquea las descargas; sí en la web.
+En la web la copia se descarga directamente; dentro de claude.ai el navegador pide confirmación antes de guardarla.
 
 ## Muro de resultados
 

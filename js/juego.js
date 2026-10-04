@@ -1354,12 +1354,34 @@
       maraton: leerMaraton(), maratones: almacen.leer("capitales.maratones", []),
     };
   }
-  $("#btn-descargar").addEventListener("click", () => {
+  // Dentro de claude.ai las descargas pasan por la plataforma (pide confirmación); en la web, un enlace normal.
+  let descargasClaude = null;
+  const enClaude = !!(window.claude && typeof window.claude.use === "function");
+  if (enClaude) {
+    window.claude.use("downloads").then((d) => {
+      descargasClaude = d;
+      if (!d) $("#btn-descargar").hidden = true; // esta vista no permite guardar archivos
+    }).catch(() => { $("#btn-descargar").hidden = true; });
+  }
+  $("#btn-descargar").addEventListener("click", async () => {
     const copia = JSON.stringify(P.exportar(datosGuardados()), null, 1);
+    const nombre = `capitales-progreso-${new Date().toISOString().slice(0, 10)}.json`;
+    if (enClaude) {
+      if (!descargasClaude) { estadoDatos("Aquí no se pueden guardar archivos. Descarga la copia desde la web del juego.", true); return; }
+      try {
+        await descargasClaude.save({ filename: nombre, data: copia });
+        estadoDatos("Copia guardada. Para recuperarla, usa «Cargar mi progreso».");
+      } catch (e) {
+        if (e && e.code === "declined") estadoDatos("Has cancelado la descarga.");
+        else if (e && e.code === "rate_limited") estadoDatos("Ya hay una descarga pendiente de confirmar.", true);
+        else estadoDatos("No se ha podido guardar la copia. Prueba desde la web del juego.", true);
+      }
+      return;
+    }
     const url = URL.createObjectURL(new Blob([copia], { type: "application/json" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `capitales-progreso-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = nombre;
     document.body.appendChild(a);
     a.click();
     a.remove();
