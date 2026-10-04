@@ -674,7 +674,7 @@
     $("#mc-barra-cam").style.width = (cam / total) * 100 + "%";
     const pct = m.turno ? Math.round((m.aciertos / m.turno) * 100) : 0;
     $("#mc-datos").textContent = m.turno
-      ? `${m.vuelta ? `Vuelta ${m.vuelta} · ` : ""}${formatoNumero(m.turno)} preguntas · ${pct} % de aciertos · ${formatoDuracion(m.segundos)} jugando · empezada ${hace(m.creada)}`
+      ? `${formatoNumero(m.turno)} preguntas · ${pct} % de aciertos · ${formatoDuracion(m.segundos)} jugando · empezada ${hace(m.creada)}`
       : `Empezada ${hace(m.creada)}. Aún no has respondido ninguna pregunta.`;
   }
   $("#btn-continuar-maraton").addEventListener("click", () => { const m = leerMaraton(); if (m) empezarMaraton(m); });
@@ -728,9 +728,10 @@
     const opciones = modoActual() === "opciones";
     $("#contador-maraton").hidden = !r.maraton;
     if (r.maraton) pintarContador(r.maraton.paises[q.p.id].racha);
-    $("#instruccion").textContent = esPais
+    $("#instruccion").textContent = (esPais
       ? (opciones ? "¿Cuál es su capital?" : "Escribe su capital")
-      : (opciones ? "¿De qué país es capital?" : "Escribe el país del que es capital");
+      : (opciones ? "¿De qué país es capital?" : "Escribe el país del que es capital")) +
+      (r.maraton && P.esRelleno(r.maraton, q.p.id) ? " · repaso de uno ya dominado (no cuenta)" : "");
     const bandera = $("#bandera-pregunta");
     // La bandera solo se enseña cuando no delata la respuesta.
     if (esPais) { bandera.src = rutaBandera(q.p.id); bandera.alt = `Bandera de ${q.p.pais}`; bandera.hidden = false; }
@@ -852,7 +853,7 @@
       guardarMaraton(m);
       pintarContador(q.cambio.despues, { animar: true });
       const c = $("#contador-maraton");
-      if (!res.ok && q.cambio.antes > 0) c.classList.add("reinicia");
+      if (!res.ok && q.cambio.antes > 0 && !q.cambio.relleno) c.classList.add("reinicia");
       if (q.cambio.dominado) {
         c.classList.add("explota");
         setTimeout(() => { confeti(120, c); sonido.fanfarria(); }, 450);
@@ -954,10 +955,13 @@
     }
     let lineaMaraton = "";
     if (enMaraton && q.cambio) {
-      const { antes, despues, dominado } = q.cambio;
+      const { antes, despues, dominado, relleno } = q.cambio;
       const nombre = escapar(p.pais);
       const quedan = P.pendientes(ronda.maraton).length;
-      if (dominado) {
+      if (relleno) {
+        lineaMaraton = `<p class="detalle linea-maraton">Pregunta de repaso: ${nombre} ya lo tenías dominado, así que no cuenta. ` +
+          "Sale para que no se repitan seguidos los pocos países que te quedan.</p>";
+      } else if (dominado) {
         lineaMaraton = `<p class="detalle linea-maraton dominado">¡Dominado! ${nombre} ya no te saldrá más: tres aciertos seguidos. ` +
           (quedan ? `Te ${quedan === 1 ? "queda 1 país" : `quedan ${quedan} países`}.` : "¡Era el último!") + "</p>";
       } else if (despues > antes) {

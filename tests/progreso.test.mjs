@@ -23,84 +23,81 @@ function semilla(s) {
   };
 }
 
-/** Juega una maratón entera. acierta(id, turno) decide cada respuesta. */
+/** Juega una maratón entera. acierta(id, turno) decide cada respuesta. Marca las preguntas de relleno. */
 function jugar(m, acierta, azar) {
   const preguntas = [];
+  preguntas.relleno = [];
   let id;
   while ((id = P.siguienteId(m, azar)) !== null) {
     preguntas.push(id);
-    preguntas.quedaban = [...(preguntas.quedaban || []), P.pendientes(m).length];
+    preguntas.relleno.push(P.esRelleno(m, id));
     P.registrarRespuesta(m, id, acierta(id, m.turno) ? "acierto" : "fallo", azar);
     if (preguntas.length > 100000) throw new Error("la maratón no termina");
   }
   return preguntas;
 }
 
-test("si aciertas siempre, cada país sale exactamente tres veces", () => {
+test("si aciertas siempre, cada país cuenta exactamente tres veces", () => {
   const m = P.crearMaraton({ ids, dir: "pc", modo: "escribir", zona: "todo" });
   const preguntas = jugar(m, () => true, semilla(1));
-  assert.equal(preguntas.length, ids.length * 3);
   const veces = {};
-  for (const id of preguntas) veces[id] = (veces[id] || 0) + 1;
+  preguntas.forEach((id, i) => { if (!preguntas.relleno[i]) veces[id] = (veces[id] || 0) + 1; });
   for (const id of ids) assert.equal(veces[id], 3, id);
+  // Solo hay relleno al final, cuando quedan menos países que la separación mínima.
+  assert.ok(preguntas.relleno.filter(Boolean).length <= P.SEPARACION * 2, `relleno ${preguntas.relleno.filter(Boolean).length}`);
   assert.equal(P.dominados(m), ids.length);
 });
 
-test("nunca pregunta el mismo país dos veces seguidas y un fallo vuelve pronto", () => {
-  const azar = semilla(7);
-  const m = P.crearMaraton({ ids, dir: "cp", modo: "opciones", zona: "todo" });
-  const fallados = new Map(); // id -> turno del fallo
-  const vueltas = [];
-  const preguntas = jugar(m, (id, turno) => {
-    if (fallados.has(id)) { vueltas.push(turno - fallados.get(id)); fallados.delete(id); }
-    const ok = azar() < 0.7;
-    if (!ok) fallados.set(id, turno + 1);
-    return ok;
-  }, azar);
-  // (salvo al final, cuando solo queda un país)
-  for (let i = 1; i < preguntas.length; i++) {
-    if (preguntas.quedaban[i] > 1) assert.notEqual(preguntas[i], preguntas[i - 1], `turno ${i}`);
+test("cada pregunta es un país pendiente cualquiera, al azar", () => {
+  // Grupo de 10: en la 6.ª pregunta, cada país sale con una frecuencia parecida (≈ 10 %).
+  const grupo = ids.slice(0, 10);
+  const cuenta = Object.fromEntries(grupo.map((id) => [id, 0]));
+  const azar = semilla(21);
+  const N = 4000;
+  for (let k = 0; k < N; k++) {
+    const m = P.crearMaraton({ ids: grupo, dir: "pc", modo: "escribir", zona: "x" });
+    let id;
+    for (let i = 0; i < 6; i++) { id = P.siguienteId(m, azar); if (i < 5) P.registrarRespuesta(m, id, azar() < 0.7 ? "acierto" : "fallo", azar); }
+    cuenta[id]++;
   }
-  assert.equal(P.pendientes(m).length, 0);
-  // Tras un fallo, el país vuelve en pocas preguntas (de media, menos de 8).
-  const media = vueltas.reduce((a, b) => a + b, 0) / vueltas.length;
-  assert.ok(media < 8, `media ${media}`);
+  for (const id of grupo) assert.ok(cuenta[id] / N > 0.07 && cuenta[id] / N < 0.13, `${id}: ${Math.round((cuenta[id] / N) * 100)} %`);
+  // Sin subgrupos: en una partida de 46 países, tras 46 preguntas han salido más de 26 distintos (al azar, ~30).
+  let distintos = 0;
+  for (let k = 0; k < 50; k++) {
+    const m = P.crearMaraton({ ids: ids.slice(0, 46), dir: "pc", modo: "escribir", zona: "x" });
+    const vistos = new Set();
+    for (let i = 0; i < 46; i++) { const x = P.siguienteId(m, azar); vistos.add(x); P.registrarRespuesta(m, x, azar() < 0.7 ? "acierto" : "fallo", azar); }
+    distintos += vistos.size;
+  }
+  assert.ok(distintos / 50 > 26, `distintos ${distintos / 50}`);
 });
 
-test("cada vuelta sale en un orden distinto", () => {
-  // De cada par de países que salieron cerca la 1.ª vez, ¿cuántos vuelven en el mismo orden? Al azar ≈ 50 %.
-  let iguales = 0, pares = 0;
-  for (let k = 1; k <= 10; k++) {
-    const m = P.crearMaraton({ ids, dir: "pc", modo: "escribir", zona: "todo" });
-    const vez = {}, primera = [], segunda = [];
-    jugar(m, (id) => {
-      vez[id] = (vez[id] || 0) + 1;
-      if (vez[id] === 1) primera.push(id);
-      if (vez[id] === 2) segunda.push(id);
-      return true;
-    }, semilla(100 + k));
-    const pos = new Map(segunda.map((x, i) => [x, i]));
-    for (let i = 0; i < primera.length; i++) {
-      for (let j = i + 1; j < Math.min(primera.length, i + 9); j++) { pares++; if (pos.get(primera[i]) < pos.get(primera[j])) iguales++; }
-    }
-  }
-  const pct = iguales / pares;
-  assert.ok(pct > 0.4 && pct < 0.6, `mismo orden ${Math.round(pct * 100)} %`);
-});
-
-test("entre dos apariciones del mismo país salen al menos tres distintos", () => {
-  for (const [grupo, semillaN] of [[ids, 5], [ids.slice(0, 12), 6], [ids.slice(0, 5), 7]]) {
+test("nunca dos veces seguidas y al menos tres países entre dos apariciones del mismo", () => {
+  for (const [grupo, semillaN] of [[ids, 5], [ids.slice(0, 12), 6], [ids.slice(0, 5), 7], [ids.slice(0, 4), 8]]) {
     const azar = semilla(semillaN);
     const m = P.crearMaraton({ ids: grupo, dir: "pc", modo: "escribir", zona: "x" });
     const ultimaVez = {};
     let id;
     while ((id = P.siguienteId(m, azar)) !== null) {
-      const minimo = Math.min(P.SEPARACION, P.pendientes(m).length - 1);
-      if (id in ultimaVez) assert.ok(m.turno - ultimaVez[id] - 1 >= minimo, `${id}: ${m.turno - ultimaVez[id] - 1} entre medias`);
+      if (id in ultimaVez) assert.ok(m.turno - ultimaVez[id] - 1 >= P.SEPARACION, `${id}: ${m.turno - ultimaVez[id] - 1} entre medias`);
       ultimaVez[id] = m.turno;
       P.registrarRespuesta(m, id, azar() < 0.7 ? "acierto" : "fallo", azar);
     }
+    assert.equal(P.pendientes(m).length, 0);
   }
+});
+
+test("al final, si quedan pocos, sale de relleno un país ya dominado que no cuenta", () => {
+  const m = P.crearMaraton({ ids: ["FR", "DE", "IT", "ES", "PT"], dir: "pc", modo: "escribir", zona: "EU" });
+  for (const id of ["IT", "ES", "PT"]) m.paises[id].racha = 3;
+  m.recientes = ["FR", "DE", "IT"];
+  const id = P.siguienteId(m, semilla(4));
+  assert.ok(["ES", "PT"].includes(id), id);
+  assert.ok(P.esRelleno(m, id));
+  const r = P.registrarRespuesta(m, id, "fallo");
+  assert.ok(r.relleno);
+  assert.equal(m.paises[id].racha, 3); // un fallo de relleno no le quita el dominado
+  assert.equal(P.dominados(m), 3);
 });
 
 test("una maratón guardada con la versión anterior se puede continuar", () => {
@@ -112,7 +109,7 @@ test("una maratón guardada con la versión anterior se puede continuar", () => 
   assert.ok(r.ok);
   const m = r.datos.maraton;
   const preguntas = jugar(m, () => true, semilla(9));
-  assert.ok(preguntas[0] !== "FR");
+  assert.ok(preguntas[0] !== "FR"); // acababa de salir
   assert.equal(P.dominados(m), 3);
 });
 

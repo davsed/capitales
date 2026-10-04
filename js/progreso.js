@@ -9,12 +9,9 @@
   /** Aciertos seguidos que hacen falta para dominar un país. */
   const OBJETIVO = 3;
   /**
-   * La maratón va por vueltas: en cada vuelta salen, en un orden aleatorio nuevo, todos los países que
-   * quedan por dominar. Un país acertado espera a la vuelta siguiente; uno fallado vuelve dentro de la
-   * misma vuelta, entre estas posiciones más adelante (al azar).
+   * Países distintos que tienen que salir, como mínimo, entre dos apariciones del mismo país.
+   * Por lo demás, cada pregunta es un país pendiente cualquiera, al azar.
    */
-  const REPETIR_FALLO = [3, 8];
-  /** Países distintos que tienen que salir, como mínimo, entre dos apariciones del mismo país. */
   const SEPARACION = 3;
   const MAX_HISTORIAL = 500;
 
@@ -33,19 +30,9 @@
     return {
       version: VERSION, creada: ahora.toISOString(), actualizada: ahora.toISOString(),
       dir, modo, zona, taiwan: !!taiwan,
-      turno: 0, aciertos: 0, fallos: 0, segundos: 0, ultimo: null, recientes: [], vuelta: 0, cola: [], paises,
+      turno: 0, aciertos: 0, fallos: 0, segundos: 0, ultimo: null, recientes: [], paises,
     };
   }
-
-  function barajar(lista, azar) {
-    const a = [...lista];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(azar() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
-  const entre = ([min, max], azar) => min + Math.floor(azar() * (max - min + 1));
 
   const pendientes = (m) => Object.keys(m.paises).filter((id) => m.paises[id].racha < OBJETIVO);
   const total = (m) => Object.keys(m.paises).length;
@@ -54,77 +41,53 @@
   const enCamino = (m) => Object.values(m.paises).filter((e) => e.racha > 0 && e.racha < OBJETIVO).length;
 
   /**
-   * Deja lista la cola de la vuelta en curso: quita los países ya dominados y, si la vuelta se ha
-   * acabado (o le quedan tan pocos que no se pueden separar), empieza otra con los que quedan en un orden
-   * aleatorio nuevo. Aparta del principio los países que acaban de salir, para que entre dos apariciones
-   * del mismo país salgan al menos SEPARACION países distintos (o todos los que queden, si son menos).
+   * País de la siguiente pregunta (o null si ya están todos dominados): uno cualquiera de los que quedan
+   * por dominar, al azar, salvo los que han salido en las últimas SEPARACION preguntas.
+   * Si al final quedan tan pocos que todos acaban de salir, sale de relleno un país ya dominado
+   * (una «cuarta vez» que no cuenta), para que entre dos apariciones del mismo país haya otros por medio.
    */
-  function prepararCola(m, azar) {
+  function siguienteId(m, azar = Math.random) {
     const pend = pendientes(m);
-    const quedan = new Set(pend);
-    const k = Math.min(SEPARACION, pend.length - 1);
-    const recientes = (Array.isArray(m.recientes) ? m.recientes : m.ultimo ? [m.ultimo] : [])
-      .filter((id) => quedan.has(id)).slice(0, k);
-    m.cola = [...new Set(Array.isArray(m.cola) ? m.cola : [])].filter((id) => quedan.has(id));
-    // Posición mínima de cada país que acaba de salir: el último necesita k países por delante;
-    // el penúltimo ya tiene uno entre medias, así que le bastan k − 1; y así sucesivamente.
-    const minimo = new Map(recientes.map((id, q) => [id, k - q]));
-    const posMin = (id) => minimo.get(id) || 0;
-    // Coloca los primeros puestos uno a uno: en cada hueco, el primer país de la cola que ya puede ir ahí.
-    const ordenar = (cola) => {
-      const delante = [], resto = [...cola];
-      while (resto.length && delante.length < k) {
-        const i = resto.findIndex((id) => posMin(id) <= delante.length);
-        if (i < 0) return null;
-        delante.push(resto.splice(i, 1)[0]);
-      }
-      return [...delante, ...resto];
-    };
-    const encadenar = () => {
-      const enCola = new Set(m.cola);
-      m.cola = [...m.cola, ...barajar(pend.filter((id) => !enCola.has(id)), azar)];
-      m.vuelta = (m.vuelta || 0) + 1;
-    };
-    if (!m.cola.length) encadenar();
-    let ordenada = ordenar(m.cola);
-    // Si la vuelta es tan corta que no deja separar a los que acaban de salir, se encadena la siguiente.
-    if (!ordenada && pend.length > m.cola.length) { encadenar(); ordenada = ordenar(m.cola); }
-    m.cola = ordenada || [...m.cola].sort((a, b) => posMin(a) - posMin(b));
+    if (!pend.length) return null;
+    const alAzar = (lista) => lista[Math.floor(azar() * lista.length)];
+    const recientes = Array.isArray(m.recientes) ? m.recientes.slice(0, SEPARACION) : m.ultimo ? [m.ultimo] : [];
+    const libres = pend.filter((id) => !recientes.includes(id));
+    if (libres.length) return alAzar(libres);
+    const relleno = Object.keys(m.paises).filter((id) => m.paises[id].racha >= OBJETIVO && !recientes.includes(id));
+    if (relleno.length) return alAzar(relleno);
+    // Grupo tan pequeño que no hay con qué separar: el pendiente que salió hace más tiempo.
+    return pend.reduce((a, b) => (recientes.indexOf(b) > recientes.indexOf(a) ? b : a));
   }
 
-  /** País de la siguiente pregunta (o null si ya están todos dominados). */
-  function siguienteId(m, azar = Math.random) {
-    if (!pendientes(m).length) return null;
-    prepararCola(m, azar);
-    return m.cola[0];
-  }
+  /** ¿Es esta pregunta de relleno, de un país ya dominado? */
+  const esRelleno = (m, id) => m.paises[id].racha >= OBJETIVO;
 
   /**
    * Apunta la respuesta a un país.
    * resultado: "acierto" (suma uno), "pista" (acierto con pista: ni suma ni resta) o "fallo" (vuelve a 0).
-   * Devuelve { antes, despues, dominado } con los aciertos seguidos antes y después.
+   * Si el país ya estaba dominado (pregunta de relleno), la respuesta cuenta en las estadísticas pero no
+   * cambia nada. Devuelve { antes, despues, dominado, relleno } con los aciertos seguidos antes y después.
    */
   function registrarRespuesta(m, id, resultado, azar = Math.random, ahora = new Date()) {
     const e = m.paises[id];
     const antes = e.racha;
+    const relleno = antes >= OBJETIVO;
     m.turno++;
-    m.cola = (Array.isArray(m.cola) ? m.cola : []).filter((x) => x !== id);
     if (resultado === "fallo") {
-      e.racha = 0;
       e.fallos++;
       m.fallos++;
+      if (!relleno) e.racha = 0;
     } else {
       e.aciertos++;
       m.aciertos++;
-      if (resultado === "acierto") e.racha = Math.min(OBJETIVO, e.racha + 1);
+      if (resultado === "acierto" && !relleno) e.racha = Math.min(OBJETIVO, e.racha + 1);
     }
-    // Fallado: vuelve dentro de esta vuelta, unas preguntas más adelante. Acertado: espera a la siguiente vuelta.
-    if (resultado === "fallo") m.cola.splice(Math.min(m.cola.length, entre(REPETIR_FALLO, azar)), 0, id);
-    if (e.racha >= OBJETIVO && antes < OBJETIVO) e.dominado = ahora.toISOString();
+    const dominado = !relleno && e.racha >= OBJETIVO;
+    if (dominado) e.dominado = ahora.toISOString();
     m.ultimo = id;
     m.recientes = [id, ...(Array.isArray(m.recientes) ? m.recientes : []).filter((x) => x !== id)].slice(0, SEPARACION);
     m.actualizada = ahora.toISOString();
-    return { antes, despues: e.racha, dominado: e.racha >= OBJETIVO };
+    return { antes, despues: e.racha, dominado, relleno };
   }
 
   /** Los países que más fallos han acumulado (para el resumen final). */
@@ -177,10 +140,8 @@
       dir: m.dir, modo: m.modo, zona: m.zona.slice(0, 40), taiwan: !!m.taiwan,
       turno: entero(m.turno, 0, 1e7), aciertos: entero(m.aciertos, 0, 1e7), fallos: entero(m.fallos, 0, 1e7),
       segundos: entero(m.segundos, 0, 1e9), ultimo: idsValidos.has(m.ultimo) ? m.ultimo : null,
-      recientes: Array.isArray(m.recientes) ? m.recientes.filter((id) => idsValidos.has(id)).slice(0, SEPARACION) : [],
-      vuelta: entero(m.vuelta, 0, 1e6),
-      // Las maratones guardadas antes de las vueltas no traen cola: empiezan una vuelta nueva al seguir.
-      cola: Array.isArray(m.cola) ? [...new Set(m.cola)].filter((id) => paises[id] && paises[id].racha < OBJETIVO) : [],
+      recientes: Array.isArray(m.recientes) ? m.recientes.filter((id) => idsValidos.has(id)).slice(0, SEPARACION)
+        : idsValidos.has(m.ultimo) ? [m.ultimo] : [], // las copias antiguas solo guardaban el último
       paises,
     };
   }
@@ -217,8 +178,8 @@
   }
 
   global.PROGRESO = {
-    VERSION, OBJETIVO, REPETIR_FALLO, SEPARACION, MAX_HISTORIAL,
-    crearMaraton, siguienteId, registrarRespuesta, pendientes, dominados, enCamino, total,
+    VERSION, OBJETIVO, SEPARACION, MAX_HISTORIAL,
+    crearMaraton, siguienteId, esRelleno, registrarRespuesta, pendientes, dominados, enCamino, total,
     masFallados, resumenMaraton, exportar, validar,
   };
 })(typeof window !== "undefined" ? window : globalThis);

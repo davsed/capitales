@@ -4,8 +4,9 @@
   "private": true,
   "description": "Juego de capitales del mundo",
   "scripts": {
-    "datos": "python3 scripts/construir_datos.py && python3 scripts/construir_lista.py && node scripts/construir_mapa.mjs && node scripts/copiar_banderas.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "datos": "python3 scripts/construir_datos.py && python3 scripts/construir_lista.py && node scripts/construir_mapa.mjs && node scripts/copiar_banderas.mjs && node scripts/huellas.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "huellas": "node scripts/huellas.mjs"
   },
   "devDependencies": {
     "d3-geo": "^3.1.1",
