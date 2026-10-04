@@ -11,6 +11,7 @@ Juego de capitales del mundo en español. Se pregunta un país al azar y escribe
 - **Dos formas de responder**: escribiendo o eligiendo entre 4 opciones. Las opciones incorrectas salen del mismo continente, para que no sea tan fácil.
 - **Continentes**: África, América del Norte y Central, Caribe, América del Sur, Asia, Europa y Oceanía, combinables entre sí.
 - **Preguntas por ronda**: 10, 25, 50, 100 o todas, sin repetir ninguna.
+- **Maratón**: partida larga en la que cada país sale hasta que lo aciertas tres veces seguidas; si fallas, ese país vuelve a cero. En cada pregunta, un símbolo muestra cómo vas con ese país: círculo vacío, una diagonal, una X y, con el tercer acierto, un asterisco que estalla, y el país ya no vuelve a salir. Un país fallado vuelve pronto y uno acertado tarda más, para que los tres aciertos no sean de memoria inmediata. Con todo el mundo son al menos 588 preguntas, así que se guarda sola y se puede seguir otro día. No tiene modo mezcla.
 - **Contador** de pregunta, aciertos, fallos, racha, puntos y tiempo. Guarda tu récord para cada combinación de opciones.
 - **Más opciones**: tiempo límite por pregunta, perdonar erratas leves («Budapes» vale por «Budapest»), pasar solo a la siguiente e incluir Taiwán.
 - **Corrección útil**: no importan tildes, mayúsculas ni artículos («Cairo» o «El Cairo»), y se aceptan nombres alternativos («Pekín» o «Beijing»). Si escribes la capital de otro país (o eliges otra opción), te dice de qué país es, a cuántos kilómetros está del correcto (de capital a capital) y si son vecinos. Por ejemplo: «Has escrito Berlín: es la capital de Alemania. Entre Alemania y Francia hay unos 880 km, y son países vecinos». En el mapa se ven los dos países unidos por la ruta de vuelo. Un fallo se muestra el doble de tiempo que un acierto (5,2 s frente a 2,6 s).
@@ -47,6 +48,15 @@ npm run datos          # descarga las fuentes, contrasta, y genera js/datos.js, 
 npm test               # pruebas de los datos y de la corrección de respuestas
 ```
 
+## Tu progreso
+
+Todo se guarda solo en el navegador (`localStorage`), así que sobrevive a cerrar la pestaña o apagar el ordenador: la maratón en curso, el historial de rondas, los récords y las opciones. En «Tus datos», en la portada:
+
+- **Descargar mi progreso** baja un archivo `capitales-progreso-AAAA-MM-DD.json` con todo lo anterior.
+- **Cargar mi progreso** lo recupera, por ejemplo en otro ordenador o navegador, o si se han borrado los datos de navegación. Antes de sustituir lo que haya guardado pide confirmación.
+
+La descarga no funciona dentro de claude.ai, que bloquea las descargas; sí en la web.
+
 ## Muro de resultados
 
 Los resultados se guardan en [Supabase](https://supabase.com) (plan gratuito), porque GitHub Pages no puede guardar datos. Para activarlo:
@@ -66,6 +76,7 @@ Mientras `js/muro-config.js` esté vacío, el muro no aparece en el juego. Solo 
 | `img/` | Icono e imagen para compartir en redes |
 | `js/tabla.js` | Tabla bidireccional país ⇄ capital y corrección de respuestas |
 | `js/juego.js` | Lógica del juego, animaciones, mapa y fotos |
+| `js/progreso.js` | Maratón (qué país toca y cuándo se domina), historial y copia de seguridad en JSON |
 | `js/muro.js`, `js/muro-config.js`, `data/muro.sql` | Muro público de resultados (Supabase) |
 | `js/datos.js`, `js/mapa.js` | Generados: países y mapamundi |
 | `data/` | Tabla curada, dataset en JSON e informe de fuentes |

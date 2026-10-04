@@ -61,6 +61,27 @@
         <div class="panel-cabecera"><span>Destino</span><span>Capital</span></div>
         <div class="panel-filas" id="panel-demo"></div>
       </div>
+      <section class="maraton-curso" id="maraton-curso" hidden aria-labelledby="mc-titulo">
+        <div class="mc-cabecera">
+          <h2 id="mc-titulo">Maratón en curso</h2>
+          <p class="mc-modalidad" id="mc-modalidad"></p>
+        </div>
+        <p class="mc-cifra"><strong id="mc-dominados">0</strong> <span>de <b id="mc-total">0</b> países dominados</span></p>
+        <div class="mc-barra" aria-hidden="true"><span class="dom" id="mc-barra-dom"></span><span class="cam" id="mc-barra-cam"></span></div>
+        <p class="mc-leyenda"><i class="dom"></i>Dominados <i class="cam"></i>Con 1 o 2 seguidos <i></i>Por dominar</p>
+        <p class="mc-datos" id="mc-datos"></p>
+        <div class="mc-acciones">
+          <button type="button" class="btn-principal" id="btn-continuar-maraton">Continuar maratón</button>
+          <button type="button" class="btn-texto" id="btn-abandonar-maraton">Abandonar</button>
+        </div>
+        <div class="mc-confirmar" id="mc-confirmar" hidden>
+          <p>Se borrará el progreso de esta maratón. ¿Seguro?</p>
+          <div class="botonera">
+            <button type="button" class="btn-secundario" id="btn-confirmar-abandono">Sí, abandonar</button>
+            <button type="button" class="btn-texto" id="btn-cancelar-abandono">No, seguir</button>
+          </div>
+        </div>
+      </section>
       <ul class="avisos">
         <li><span class="marca-aviso nuevo">2026</span><span><b>Guinea Ecuatorial estrena capital:</b> desde enero es Ciudad de la Paz, no Malabo.</span></li>
         <li><span class="marca-aviso">Dudas</span><span>Si un país tiene varias capitales (Bolivia, Sudáfrica…) se aceptan todas, y al responder te contamos por qué.</span></li>
@@ -71,12 +92,21 @@
     <form id="form-opciones" class="billete" novalidate>
       <div class="billete-cuerpo">
         <fieldset class="grupo">
+          <legend>Tipo de partida</legend>
+          <div class="segmentado ancho" id="seg-tipo">
+            <label><input type="radio" name="tipo" value="ronda" id="tipo-ronda" checked><span>Ronda</span></label>
+            <label><input type="radio" name="tipo" value="maraton" id="tipo-maraton"><span>Maratón</span></label>
+          </div>
+          <p class="ayuda" id="ayuda-tipo" hidden>Cada país sale hasta que lo aciertes tres veces seguidas; si fallas, vuelve a cero. Se guarda sola y puedes seguir otro día.</p>
+        </fieldset>
+
+        <fieldset class="grupo">
           <legend>Continentes</legend>
           <div class="chips" id="chips-continentes"></div>
           <p class="ayuda" id="resumen-pool">197 países seleccionados</p>
         </fieldset>
 
-        <fieldset class="grupo">
+        <fieldset class="grupo" id="grupo-n">
           <legend>Preguntas por ronda</legend>
           <div class="segmentado" id="seg-n">
             <label><input type="radio" name="n" value="10" id="n-10" checked><span>10</span></label>
@@ -94,6 +124,7 @@
             <label><input type="radio" name="dir" value="cp" id="dir-cp"><span>Capital <b>→</b> país</span></label>
             <label><input type="radio" name="dir" value="mix" id="dir-mix"><span>Mezcla</span></label>
           </div>
+          <p class="ayuda" id="aviso-mezcla" hidden>En la maratón no hay mezcla: elige un sentido.</p>
         </fieldset>
 
         <fieldset class="grupo">
@@ -134,11 +165,42 @@
 
       <div class="billete-talon">
         <div class="talon-dato"><span>Pasajero</span><strong id="talon-modo">País → capital</strong></div>
-        <div class="talon-dato"><span>Paradas</span><strong id="talon-n">10</strong></div>
+        <div class="talon-dato"><span id="talon-n-etq">Paradas</span><strong id="talon-n">10</strong></div>
         <div class="talon-dato" id="talon-record-caja"><span>Tu récord</span><strong id="talon-record">—</strong></div>
         <button type="submit" class="btn-principal" id="btn-empezar">Empezar ronda</button>
+        <div class="confirmar-nueva" id="confirmar-nueva" hidden>
+          <p id="confirmar-nueva-texto">Ya tienes una maratón en curso. Si empiezas otra, se borrará.</p>
+          <div class="botonera">
+            <button type="button" class="btn-principal" id="btn-nueva-si">Empezar de cero</button>
+            <button type="button" class="btn-texto" id="btn-nueva-no">Seguir con la que tengo</button>
+          </div>
+        </div>
       </div>
     </form>
+
+    <section class="mis-datos" id="mis-datos" aria-labelledby="md-titulo">
+      <div class="md-cabecera">
+        <h2 id="md-titulo">Tus datos</h2>
+        <p class="ayuda" id="md-resumen">Se guardan solos en este navegador.</p>
+      </div>
+      <div class="md-acciones">
+        <button type="button" class="btn-secundario" id="btn-descargar">Descargar mi progreso</button>
+        <button type="button" class="btn-secundario" id="btn-cargar">Cargar mi progreso</button>
+        <input type="file" id="archivo-progreso" accept=".json,application/json" hidden>
+      </div>
+      <div class="md-confirmar" id="md-confirmar" hidden>
+        <p id="md-confirmar-texto"></p>
+        <div class="botonera">
+          <button type="button" class="btn-principal" id="btn-confirmar-carga">Cargar y reemplazar</button>
+          <button type="button" class="btn-texto" id="btn-cancelar-carga">Cancelar</button>
+        </div>
+      </div>
+      <p class="md-estado" id="md-estado" aria-live="polite"></p>
+      <details class="md-historial" id="md-historial" hidden>
+        <summary>Tus últimas rondas</summary>
+        <ol class="lista-historial" id="lista-historial"></ol>
+      </details>
+    </section>
   </section>
 
   <!-- ============ JUEGO ============ -->
@@ -149,11 +211,11 @@
         <svg class="avion" id="avion" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor"/></svg>
       </div>
       <div class="marcador">
-        <div class="dato-hud"><span>Pregunta</span><strong><b id="hud-i">1</b>/<span id="hud-n">10</span></strong></div>
+        <div class="dato-hud"><span>Pregunta</span><strong><b id="hud-i">1</b><span id="hud-de">/<span id="hud-n">10</span></span></strong></div>
         <div class="dato-hud ok"><span>Aciertos</span><strong id="hud-aciertos">0</strong></div>
         <div class="dato-hud mal"><span>Fallos</span><strong id="hud-fallos">0</strong></div>
         <div class="dato-hud racha" id="hud-racha-caja"><span>Racha</span><strong id="hud-racha">0</strong></div>
-        <div class="dato-hud"><span>Puntos</span><strong id="hud-puntos">0</strong></div>
+        <div class="dato-hud"><span id="hud-puntos-etq">Puntos</span><strong id="hud-puntos">0</strong></div>
         <div class="dato-hud"><span>Tiempo</span><strong id="hud-tiempo">0:00</strong></div>
       </div>
     </div>
@@ -163,6 +225,15 @@
         <div class="pregunta-cabecera">
           <span class="etiqueta-tipo" id="etiqueta-tipo">País</span>
           <p class="instruccion" id="instruccion">Escribe su capital</p>
+          <div class="contador-maraton" id="contador-maraton" hidden data-racha="0" role="img" aria-label="0 de 3 aciertos seguidos">
+            <svg viewBox="0 0 44 44" aria-hidden="true">
+              <g class="estallido"><path d="M22 1v6M22 37v6M1 22h6M37 22h6M7.2 7.2l4.2 4.2M32.6 32.6l4.2 4.2M7.2 36.8l4.2-4.2M32.6 11.4l4.2-4.2"/></g>
+              <circle cx="22" cy="22" r="17" class="aro"/>
+              <line x1="11.6" y1="28" x2="32.4" y2="16" class="trazo t1"/>
+              <line x1="11.6" y1="16" x2="32.4" y2="28" class="trazo t2"/>
+              <line x1="22" y1="10" x2="22" y2="34" class="trazo t3"/>
+            </svg>
+          </div>
           <div class="reloj" id="reloj" hidden><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" class="reloj-fondo"/><circle cx="18" cy="18" r="15.5" class="reloj-arco" id="reloj-arco"/></svg><span id="reloj-num">20</span></div>
         </div>
         <div class="fila-tablero">
@@ -217,10 +288,10 @@
       <p class="final-record" id="final-record" hidden>Nuevo récord con estas opciones</p>
     </div>
     <div class="final-cifras">
-      <div class="cifra"><strong id="f-puntos">0</strong><span>puntos</span></div>
+      <div class="cifra"><strong id="f-puntos">0</strong><span id="f-puntos-etq">puntos</span></div>
       <div class="cifra"><strong id="f-aciertos">0/0</strong><span id="f-pct">0 % de aciertos</span></div>
-      <div class="cifra"><strong id="f-racha">0</strong><span>mejor racha</span></div>
-      <div class="cifra"><strong id="f-tiempo">0:00</strong><span>tiempo total</span></div>
+      <div class="cifra"><strong id="f-racha">0</strong><span id="f-racha-etq">mejor racha</span></div>
+      <div class="cifra"><strong id="f-tiempo">0:00</strong><span id="f-tiempo-etq">tiempo total</span></div>
     </div>
     <div class="publicar" id="caja-publicar" hidden>
       <div class="publicar-texto">
@@ -245,7 +316,7 @@
       <div class="sellos" id="sellos"></div>
     </div>
     <div class="fallos" id="caja-fallos">
-      <h3>Para repasar</h3>
+      <h3 id="fallos-titulo">Para repasar</h3>
       <ul id="lista-fallos"></ul>
     </div>
     <div class="final-acciones">
@@ -343,6 +414,7 @@
 <script src="js/datos.js"></script>
 <script src="js/mapa.js"></script>
 <script src="js/tabla.js"></script>
+<script src="js/progreso.js"></script>
 <script src="js/muro-config.js"></script>
 <script src="js/muro.js"></script>
 <script src="js/juego.js"></script>

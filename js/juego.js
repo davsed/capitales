@@ -23,6 +23,7 @@
   };
 
   const { normalizar, variantes, capitalDe, paisDe, evaluar, distanciaKm, ARTICULO } = window.TABLA;
+  const P = window.PROGRESO;
 
   /* ------------------------------------------------------------------
      Utilidades
@@ -51,6 +52,20 @@
   const yE = (siguiente) => (/^h?i(?![aeouáéóú])/i.test(normalizar(siguiente)) ? "e" : "y");
   const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const anunciar = (texto) => { $("#anuncio").textContent = texto; };
+  /** Duración legible: 4:05, o 2 h 13 min si pasa de una hora. */
+  function formatoDuracion(segundos) {
+    const s = Math.round(segundos);
+    if (s < 3600) return formatoTiempo(s * 1000);
+    return `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")} min`;
+  }
+  const relativo = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+  function hace(fecha) {
+    const s = (new Date(fecha) - Date.now()) / 1000;
+    for (const [unidad, seg] of [["day", 86400], ["hour", 3600], ["minute", 60]]) {
+      if (Math.abs(s) >= seg) return relativo.format(Math.round(s / seg), unidad);
+    }
+    return "ahora mismo";
+  }
 
   /* ------------------------------------------------------------------
      Sonido (Web Audio, sin archivos)
@@ -369,12 +384,23 @@
      Ajustes
      ------------------------------------------------------------------ */
   const AJUSTES_POR_DEFECTO = {
-    conts: Object.keys(CONTINENTES), n: 10, dir: "pc", modo: "escribir",
+    tipo: "ronda", conts: Object.keys(CONTINENTES), n: 10, dir: "pc", modo: "escribir",
     tiempo: 0, erratas: true, auto: true, taiwan: false,
   };
-  let ajustes = { ...AJUSTES_POR_DEFECTO, ...almacen.leer("capitales.ajustes", {}) };
-  ajustes.conts = ajustes.conts.filter((c) => c in CONTINENTES);
-  if (!ajustes.conts.length) ajustes.conts = Object.keys(CONTINENTES);
+  /** Ajustes válidos a partir de lo guardado (o de una copia cargada): lo que no se reconoce se ignora. */
+  function limpiarAjustes(a, base = AJUSTES_POR_DEFECTO) {
+    const r = { ...base, conts: [...base.conts] };
+    if (!a || typeof a !== "object") return r;
+    if (Array.isArray(a.conts)) { const c = a.conts.filter((x) => x in CONTINENTES); if (c.length) r.conts = c; }
+    if (["ronda", "maraton"].includes(a.tipo)) r.tipo = a.tipo;
+    if ([0, 10, 25, 50, 100].includes(a.n)) r.n = a.n;
+    if (["pc", "cp", "mix"].includes(a.dir)) r.dir = a.dir;
+    if (["escribir", "opciones"].includes(a.modo)) r.modo = a.modo;
+    if ([0, 10, 20, 30].includes(a.tiempo)) r.tiempo = a.tiempo;
+    for (const k of ["erratas", "auto", "taiwan"]) if (typeof a[k] === "boolean") r[k] = a[k];
+    return r;
+  }
+  let ajustes = limpiarAjustes(almacen.leer("capitales.ajustes", {}));
 
   const paisesDisponibles = () => PAISES.filter((p) => ajustes.taiwan || !p.limitado);
   const poolActual = () => paisesDisponibles().filter((p) => ajustes.conts.includes(p.cont));
@@ -382,6 +408,10 @@
   const nEfectivo = () => { const total = poolActual().length; return ajustes.n && ajustes.n < total ? ajustes.n : total; };
   const firmaAjustes = () => [ajustes.conts.slice().sort().join("+"), nEfectivo(), ajustes.dir, ajustes.modo, ajustes.taiwan ? "tw" : ""].join("|");
   const TEXTO_DIR = { pc: "País → capital", cp: "Capital → país", mix: "Mezcla" };
+  const TEXTO_MODO = { escribir: "Escribiendo", opciones: "4 opciones" };
+  const zonaActual = () => (ajustes.conts.length === Object.keys(CONTINENTES).length ? "todo"
+    : Object.keys(CONTINENTES).filter((c) => ajustes.conts.includes(c)).join("+"));
+  const textoZona = (zona) => (zona === "todo" ? "Todo el mundo" : zona.split("+").map((c) => CONTINENTES[c] || c).join(" + "));
 
   function pintarChipsContinentes() {
     const caja = $("#chips-continentes");
@@ -417,6 +447,8 @@
   }
 
   function refrescarOpciones() {
+    const maraton = ajustes.tipo === "maraton";
+    if (maraton && ajustes.dir === "mix") ajustes.dir = "pc"; // en la maratón no hay mezcla
     pintarChipsContinentes();
     const total = poolActual().length;
     $("#resumen-pool").textContent = `${total} ${total === 1 ? "país seleccionado" : "países seleccionados"}`;
@@ -434,11 +466,22 @@
     const record = almacen.leer("capitales.records", {})[firmaAjustes()];
     $("#talon-record").textContent = record ? formatoNumero(record.puntos) : "—";
     $("#talon-n").textContent = nEfectivo();
+    $(`input[name="tipo"][value="${ajustes.tipo}"]`).checked = true;
+    $("#ayuda-tipo").hidden = !maraton;
+    $("#grupo-n").hidden = maraton;
+    $("#dir-mix").disabled = maraton;
+    $("#aviso-mezcla").hidden = !maraton;
+    $("#talon-n-etq").textContent = maraton ? "Países" : "Paradas";
+    if (maraton) $("#talon-n").textContent = total;
+    $("#talon-record-caja").hidden = maraton;
+    $("#btn-empezar").textContent = maraton ? "Empezar maratón" : "Empezar ronda";
+    $("#confirmar-nueva").hidden = true;
     almacen.guardar("capitales.ajustes", ajustes);
   }
 
   $("#form-opciones").addEventListener("change", (e) => {
     const t = e.target;
+    if (t.name === "tipo") ajustes.tipo = t.value;
     if (t.name === "n") ajustes.n = Number(t.value);
     if (t.name === "dir") ajustes.dir = t.value;
     if (t.name === "modo") ajustes.modo = t.value;
@@ -450,7 +493,21 @@
   });
   $("#form-opciones").addEventListener("submit", (e) => {
     e.preventDefault();
-    empezarRonda(poolActual());
+    if (ajustes.tipo !== "maraton") { empezarRonda(poolActual()); return; }
+    const actual = leerMaraton();
+    if (actual) {
+      $("#confirmar-nueva-texto").textContent = `Ya tienes una maratón en curso (${P.dominados(actual)} de ${P.total(actual)} países dominados). Si empiezas otra, se borrará.`;
+      $("#confirmar-nueva").hidden = false;
+      $("#btn-nueva-no").focus();
+      return;
+    }
+    nuevaMaraton();
+  });
+  $("#btn-nueva-si").addEventListener("click", () => { $("#confirmar-nueva").hidden = true; nuevaMaraton(); });
+  $("#btn-nueva-no").addEventListener("click", () => {
+    $("#confirmar-nueva").hidden = true;
+    const m = leerMaraton();
+    if (m) empezarMaraton(m);
   });
 
   /* ------------------------------------------------------------------
@@ -492,7 +549,7 @@
     for (const p of pantallas) $("#pantalla-" + p).hidden = p !== nombre;
     for (const sel of ["#nav-jugar", "#nav-tabla", "#nav-muro"]) $(sel).removeAttribute("aria-current");
     $(NAV[nombre] || "#nav-jugar").setAttribute("aria-current", "page");
-    if (nombre === "inicio") iniciarDemo(); else clearInterval(temporizadorDemo);
+    if (nombre === "inicio") { iniciarDemo(); pintarMaratonCurso(); pintarMisDatos(); } else clearInterval(temporizadorDemo);
     window.scrollTo({ top: 0, behavior: movimientoReducido ? "auto" : "smooth" });
   }
 
@@ -513,35 +570,143 @@
     const preguntas = barajar(pool).slice(0, n).map((p) => ({
       p, dir: ajustes.dir === "mix" ? (Math.random() < 0.5 ? "pc" : "cp") : ajustes.dir,
     }));
-    const todas = ajustes.conts.length === Object.keys(CONTINENTES).length;
     ronda = {
       preguntas, i: 0, aciertos: 0, fallos: 0, racha: 0, mejorRacha: 0, puntos: 0,
       inicio: performance.now(), historial: [], respondida: false, pista: 0, repaso, abandonada: false,
       modalidad: {
         dir: ajustes.dir, modo: ajustes.modo, limite: ajustes.tiempo,
-        zona: todas ? "todo" : Object.keys(CONTINENTES).filter((c) => ajustes.conts.includes(c)).join("+"),
+        zona: zonaActual(),
       },
     };
     promesaFotos = precargarFotos(preguntas.map((q) => q.p.wiki));
-    mostrarPantalla("juego");
-    clearInterval(temporizadorCrono);
-    temporizadorCrono = setInterval(() => { $("#hud-tiempo").textContent = formatoTiempo(performance.now() - ronda.inicio); }, 500);
-    $("#hud-tiempo").textContent = "0:00";
-    actualizarHud();
+    arrancarPantallaJuego();
     mostrarPregunta();
   }
 
+  function arrancarPantallaJuego() {
+    mostrarPantalla("juego");
+    const maraton = !!ronda.maraton;
+    $("#hud-puntos-etq").textContent = maraton ? "Dominados" : "Puntos";
+    $("#hud-de").hidden = maraton;
+    $("#btn-abandonar").textContent = maraton ? "Pausar maratón" : "Terminar ronda";
+    clearInterval(temporizadorCrono);
+    temporizadorCrono = setInterval(() => { $("#hud-tiempo").textContent = formatoTiempo(performance.now() - ronda.inicio); }, 500);
+    $("#hud-tiempo").textContent = "0:00";
+  }
+
+  /* ------------------------------------------------------------------
+     Maratón: cada país hasta acertarlo tres veces seguidas (lógica en js/progreso.js)
+     ------------------------------------------------------------------ */
+  const PAIS = Object.fromEntries(PAISES.map((p) => [p.id, p]));
+  const IDS = new Set(PAISES.map((p) => p.id));
+  /** Ajuste de respuesta en uso: el de la maratón si se está jugando una, si no el elegido. */
+  const modoActual = () => (ronda && ronda.maraton ? ronda.maraton.modo : ajustes.modo);
+
+  function leerMaraton() {
+    const m = almacen.leer("capitales.maraton", null);
+    if (!m) return null;
+    const r = P.validar({ app: "capitales", version: P.VERSION, maraton: m }, IDS);
+    return r.ok ? r.datos.maraton : null;
+  }
+  const guardarMaraton = (m) => almacen.guardar("capitales.maraton", m);
+
+  function nuevaMaraton() {
+    const m = P.crearMaraton({
+      ids: poolActual().map((p) => p.id), dir: ajustes.dir === "mix" ? "pc" : ajustes.dir,
+      modo: ajustes.modo, zona: zonaActual(), taiwan: ajustes.taiwan,
+    });
+    guardarMaraton(m);
+    empezarMaraton(m);
+  }
+
+  function empezarMaraton(m) {
+    const ahora = performance.now();
+    ronda = {
+      maraton: m, preguntas: [], i: -1, aciertos: 0, fallos: 0, racha: 0, mejorRacha: 0, puntos: 0,
+      inicio: ahora, marca: ahora, historial: [], respondida: true, pista: 0, repaso: false, abandonada: false,
+      modalidad: { dir: m.dir, modo: m.modo, limite: ajustes.tiempo, zona: m.zona },
+    };
+    promesaFotos = precargarFotos(P.pendientes(m).map((id) => PAIS[id].wiki));
+    arrancarPantallaJuego();
+    siguienteMaraton();
+  }
+
+  function siguienteMaraton() {
+    const m = ronda.maraton;
+    const id = P.siguienteId(m);
+    if (!id) { terminarMaraton(); return; }
+    ronda.preguntas.push({ p: PAIS[id], dir: m.dir });
+    ronda.i = ronda.preguntas.length - 1;
+    mostrarPregunta();
+  }
+
+  function pausarMaraton() {
+    if (ronda && ronda.maraton) guardarMaraton(ronda.maraton);
+    detenerRonda();
+    ronda = null;
+    refrescarOpciones();
+    mostrarPantalla("inicio");
+  }
+
+  /** Símbolo de aciertos seguidos: círculo vacío, una diagonal, la otra (X) y el asterisco completo. */
+  function pintarContador(racha, { animar = false } = {}) {
+    const c = $("#contador-maraton");
+    c.classList.remove("explota", "reinicia");
+    if (!animar) c.classList.add("sin-transicion");
+    c.dataset.racha = racha;
+    const texto = `${racha} de ${P.OBJETIVO} aciertos seguidos`;
+    c.setAttribute("aria-label", texto);
+    c.title = texto;
+    if (!animar) { void c.offsetWidth; c.classList.remove("sin-transicion"); }
+  }
+
+  function pintarMaratonCurso() {
+    const m = leerMaraton();
+    const caja = $("#maraton-curso");
+    caja.hidden = !m;
+    $("#mc-confirmar").hidden = true;
+    if (!m) return;
+    const total = P.total(m), dom = P.dominados(m), cam = P.enCamino(m);
+    $("#mc-modalidad").textContent = [TEXTO_DIR[m.dir], TEXTO_MODO[m.modo], textoZona(m.zona)].join(" · ");
+    $("#mc-dominados").textContent = dom;
+    $("#mc-total").textContent = total;
+    $("#mc-barra-dom").style.width = (dom / total) * 100 + "%";
+    $("#mc-barra-cam").style.width = (cam / total) * 100 + "%";
+    const pct = m.turno ? Math.round((m.aciertos / m.turno) * 100) : 0;
+    $("#mc-datos").textContent = m.turno
+      ? `${formatoNumero(m.turno)} preguntas · ${pct} % de aciertos · ${formatoDuracion(m.segundos)} jugando · empezada ${hace(m.creada)}`
+      : `Empezada ${hace(m.creada)}. Aún no has respondido ninguna pregunta.`;
+  }
+  $("#btn-continuar-maraton").addEventListener("click", () => { const m = leerMaraton(); if (m) empezarMaraton(m); });
+  $("#btn-abandonar-maraton").addEventListener("click", () => { $("#mc-confirmar").hidden = false; $("#btn-cancelar-abandono").focus(); });
+  $("#btn-cancelar-abandono").addEventListener("click", () => { $("#mc-confirmar").hidden = true; });
+  $("#btn-confirmar-abandono").addEventListener("click", () => {
+    guardarMaraton(null);
+    pintarMaratonCurso();
+    pintarMisDatos();
+  });
+
   function actualizarHud(saltar) {
     const r = ronda;
-    const total = r.preguntas.length;
-    $("#hud-i").textContent = Math.min(r.i + 1, total);
-    $("#hud-n").textContent = total;
-    $("#hud-aciertos").textContent = r.aciertos;
-    $("#hud-fallos").textContent = r.fallos;
+    let avance;
+    if (r.maraton) {
+      const m = r.maraton;
+      $("#hud-i").textContent = formatoNumero(m.turno + (r.respondida ? 0 : 1));
+      $("#hud-aciertos").textContent = formatoNumero(m.aciertos);
+      $("#hud-fallos").textContent = formatoNumero(m.fallos);
+      $("#hud-puntos").textContent = `${P.dominados(m)}/${P.total(m)}`;
+      avance = P.dominados(m) / P.total(m);
+    } else {
+      const total = r.preguntas.length;
+      $("#hud-i").textContent = Math.min(r.i + 1, total);
+      $("#hud-n").textContent = total;
+      $("#hud-aciertos").textContent = r.aciertos;
+      $("#hud-fallos").textContent = r.fallos;
+      $("#hud-puntos").textContent = formatoNumero(r.puntos);
+      avance = (r.i + (r.respondida ? 1 : 0)) / total;
+    }
     $("#hud-racha").textContent = r.racha;
-    $("#hud-puntos").textContent = formatoNumero(r.puntos);
     $("#hud-racha-caja").classList.toggle("en-llamas", r.racha >= 5);
-    const avance = (r.i + (r.respondida ? 1 : 0)) / total;
     $("#ruta-hecha").style.width = avance * 100 + "%";
     $("#avion").style.left = `clamp(13px, ${avance * 100}%, calc(100% - 13px))`;
     if (saltar) {
@@ -560,7 +725,9 @@
     const etiqueta = $("#etiqueta-tipo");
     etiqueta.textContent = esPais ? "País" : "Capital";
     etiqueta.classList.toggle("capital", !esPais);
-    const opciones = ajustes.modo === "opciones";
+    const opciones = modoActual() === "opciones";
+    $("#contador-maraton").hidden = !r.maraton;
+    if (r.maraton) pintarContador(r.maraton.paises[q.p.id].racha);
     $("#instruccion").textContent = esPais
       ? (opciones ? "¿Cuál es su capital?" : "Escribe su capital")
       : (opciones ? "¿De qué país es capital?" : "Escribe el país del que es capital");
@@ -675,6 +842,22 @@
     r.respondida = true;
     clearInterval(temporizadorReloj);
     let ganados = 0;
+    if (r.maraton) {
+      // Maratón: suma el acierto (con pista no suma), un fallo vuelve a 0, y se guarda al momento.
+      const m = r.maraton;
+      const ahora = performance.now();
+      m.segundos += Math.min(120, (ahora - r.marca) / 1000); // sin contar ratos con la pestaña olvidada
+      r.marca = ahora;
+      q.cambio = P.registrarRespuesta(m, q.p.id, res.ok ? (r.pista ? "pista" : "acierto") : "fallo");
+      guardarMaraton(m);
+      pintarContador(q.cambio.despues, { animar: true });
+      const c = $("#contador-maraton");
+      if (!res.ok && q.cambio.antes > 0) c.classList.add("reinicia");
+      if (q.cambio.dominado) {
+        c.classList.add("explota");
+        setTimeout(() => { confeti(120, c); sonido.fanfarria(); }, 450);
+      }
+    }
     if (res.ok) {
       r.aciertos++;
       r.racha++;
@@ -690,13 +873,13 @@
     }
     r.historial.push({ q, ok: res.ok, texto, exacta: res.exacta, pasada, agotado: res.agotado });
     actualizarHud(res.ok ? "#hud-aciertos" : "#hud-fallos");
-    if (res.ok) actualizarHud("#hud-puntos");
+    if (res.ok && (!r.maraton || q.cambio.dominado)) actualizarHud("#hud-puntos");
 
     // Entrada y acciones
     $("#entrada").disabled = true;
     $("#btn-comprobar").disabled = true;
     $("#acciones-pregunta").hidden = true;
-    if (ajustes.modo === "opciones") {
+    if (modoActual() === "opciones") {
       for (const b of $("#opciones4").children) {
         b.disabled = true;
         if (b.dataset.id === q.p.id) b.classList.add("correcta");
@@ -729,12 +912,13 @@
       ? `${escapar(p.pais)}<span class="flecha">→</span>${escapar(p.capital)}`
       : `${escapar(p.capital)}<span class="flecha">→</span>${escapar(p.pais)}`;
     let detalle = "";
+    const enMaraton = !!ronda.maraton;
     if (res.ok && res.exacta) {
-      detalle = `¡Bien! <strong>+${ganados}</strong> puntos${ronda.racha > 1 ? ` · racha de ${ronda.racha}` : ""}.`;
+      detalle = enMaraton ? "¡Bien!" : `¡Bien! <strong>+${ganados}</strong> puntos${ronda.racha > 1 ? ` · racha de ${ronda.racha}` : ""}.`;
       const principal = esPais ? p.capital : p.pais;
       if (normalizar(res.nombre) !== normalizar(principal)) detalle += ` También se dice <strong>${escapar(principal)}</strong>.`;
     } else if (res.ok) {
-      detalle = `Te lo damos por bueno (<strong>+${ganados}</strong>), pero se escribe <strong>${escapar(res.nombre)}</strong>.`;
+      detalle = `Te lo damos por bueno${enMaraton ? "" : ` (<strong>+${ganados}</strong>)`}, pero se escribe <strong>${escapar(res.nombre)}</strong>.`;
     } else if (pasada) {
       detalle = "Pregunta pasada.";
     } else if (res.agotado) {
@@ -768,10 +952,27 @@
       distancia = `Entre ${escapar(otro.pais)} ${yE(p.pais)} ${escapar(p.pais)} hay unos <strong>${km} km</strong> ` +
         `(de ${escapar(otro.capital)} a ${escapar(p.capital)})${vecinos ? ", y son países vecinos" : ""}.`;
     }
+    let lineaMaraton = "";
+    if (enMaraton && q.cambio) {
+      const { antes, despues, dominado } = q.cambio;
+      const nombre = escapar(p.pais);
+      const quedan = P.pendientes(ronda.maraton).length;
+      if (dominado) {
+        lineaMaraton = `<p class="detalle linea-maraton dominado">¡Dominado! ${nombre} ya no te saldrá más: tres aciertos seguidos. ` +
+          (quedan ? `Te ${quedan === 1 ? "queda 1 país" : `quedan ${quedan} países`}.` : "¡Era el último!") + "</p>";
+      } else if (despues > antes) {
+        lineaMaraton = `<p class="detalle linea-maraton">Llevas ${despues} de 3 aciertos seguidos con ${nombre}.</p>`;
+      } else if (res.ok) {
+        lineaMaraton = `<p class="detalle linea-maraton">Con pista no suma: sigues con ${antes} de 3 con ${nombre}.</p>`;
+      } else {
+        lineaMaraton = `<p class="detalle linea-maraton">${antes ? `Vuelves a empezar con ${nombre}: tenías ${antes} de 3 seguidos.` : `${nombre} sigue en 0 de 3.`}</p>`;
+      }
+    }
     const extra = [formatoPoblacion(p.pob), CONTINENTES[p.cont]].filter(Boolean).join(" · ");
     v.innerHTML =
       `<p class="par">${par}</p>` +
       `<p class="detalle">${detalle}</p>` +
+      lineaMaraton +
       (distancia ? `<p class="detalle distancia">${distancia}</p>` : "") +
       (extra ? `<p class="detalle">${escapar(p.capital)}: ${escapar(extra)}</p>` : "") +
       (p.nota ? `<p class="nota">${escapar(p.nota)}</p>` : "");
@@ -782,7 +983,8 @@
     if (!esPais) { const b = $("#bandera-pregunta"); b.src = rutaBandera(p.id); b.alt = `Bandera de ${p.pais}`; b.hidden = false; }
 
     const btn = $("#btn-siguiente");
-    btn.querySelector("span").textContent = ronda.i + 1 >= ronda.preguntas.length ? "Ver resultado" : "Siguiente";
+    const ultima = enMaraton ? !P.pendientes(ronda.maraton).length : ronda.i + 1 >= ronda.preguntas.length;
+    btn.querySelector("span").textContent = ultima ? "Ver resultado" : "Siguiente";
     btn.focus({ preventScroll: true });
     $("#revelado").scrollIntoView({ behavior: movimientoReducido ? "auto" : "smooth", block: "nearest" });
     programarSiguiente(res.ok ? PAUSA_ACIERTO : PAUSA_FALLO);
@@ -846,6 +1048,7 @@
     clearTimeout(temporizadorSiguiente);
     temporizadorSiguiente = 0;
     if (!ronda || !ronda.respondida) return;
+    if (ronda.maraton) { siguienteMaraton(); return; }
     if (ronda.i + 1 >= ronda.preguntas.length) { terminar(); return; }
     ronda.i++;
     mostrarPregunta();
@@ -858,6 +1061,7 @@
   });
   $("#btn-abandonar").addEventListener("click", () => {
     if (!ronda) return;
+    if (ronda.maraton) { pausarMaraton(); return; }
     if (!ronda.historial.length) { clearInterval(temporizadorReloj); clearInterval(temporizadorCrono); mostrarPantalla("inicio"); return; }
     ronda.preguntas = ronda.preguntas.slice(0, ronda.historial.length);
     ronda.respondida = true;
@@ -869,7 +1073,7 @@
     const q = ronda.preguntas[ronda.i];
     ronda.pista = 1;
     $("#btn-pista").disabled = true;
-    if (ajustes.modo === "opciones") {
+    if (modoActual() === "opciones") {
       // 50 %: se descartan dos opciones incorrectas.
       const malas = barajar([...$("#opciones4").children].filter((b) => b.dataset.id !== q.p.id)).slice(0, 2);
       for (const b of malas) { b.classList.add("descartada"); b.disabled = true; }
@@ -897,6 +1101,8 @@
     const titulo = pct === 100 ? "Diplomático de carrera" : pct >= 80 ? "Trotamundos" : pct >= 60 ? "Viajero frecuente" : pct >= 40 ? "Turista con mapa" : "Toca repasar el atlas";
     $("#final-titulo").textContent = titulo;
     $("#final-antetitulo").textContent = r.repaso ? "Repaso terminado" : `Ronda terminada · ${TEXTO_DIR[ajustes.dir]}`;
+    etiquetasFinal(["puntos", "mejor racha", "tiempo total", "Para repasar"]);
+    $("#btn-otra").hidden = false;
     $("#f-puntos").textContent = formatoNumero(r.puntos);
     $("#f-aciertos").textContent = `${r.aciertos}/${total}`;
     $("#f-pct").textContent = `${pct} % de aciertos`;
@@ -915,6 +1121,16 @@
       }
     }
     $("#final-record").hidden = !nuevoRecord;
+
+    // Historial de rondas (se guarda en el navegador y va en la copia de seguridad)
+    if (!r.repaso && total) {
+      const historial = almacen.leer("capitales.historial", []);
+      historial.push({
+        fecha: new Date().toISOString(), ...r.modalidad, preguntas: total, aciertos: r.aciertos,
+        puntos: r.puntos, segundos: Math.round(tiempo / 1000), completa: !r.abandonada,
+      });
+      almacen.guardar("capitales.historial", historial.slice(-P.MAX_HISTORIAL));
+    }
 
     const sellos = $("#sellos");
     sellos.textContent = "";
@@ -949,6 +1165,64 @@
     if (pct >= 80 || nuevoRecord) { confeti(160); sonido.fanfarria(); }
   }
 
+  function etiquetasFinal([puntos, racha, tiempo, fallos]) {
+    $("#f-puntos-etq").textContent = puntos;
+    $("#f-racha-etq").textContent = racha;
+    $("#f-tiempo-etq").textContent = tiempo;
+    $("#fallos-titulo").textContent = fallos;
+  }
+
+  function terminarMaraton() {
+    const m = ronda.maraton;
+    detenerRonda();
+    const maratones = almacen.leer("capitales.maratones", []);
+    maratones.push(P.resumenMaraton(m));
+    almacen.guardar("capitales.maratones", maratones.slice(-100));
+    guardarMaraton(null);
+
+    const total = P.total(m);
+    const pct = m.turno ? Math.round((m.aciertos / m.turno) * 100) : 0;
+    const dias = Math.max(1, Math.ceil((Date.now() - new Date(m.creada)) / 86400000));
+    $("#final-antetitulo").textContent = `Maratón · ${TEXTO_DIR[m.dir]} · ${TEXTO_MODO[m.modo]} · ${textoZona(m.zona)}`;
+    $("#final-titulo").textContent = "¡Maratón completada!";
+    $("#final-record").hidden = true;
+    etiquetasFinal(["países dominados", "preguntas", dias === 1 ? "jugando, en 1 día" : `jugando, en ${dias} días`, "Los que más te costaron"]);
+    $("#f-puntos").textContent = total;
+    $("#f-aciertos").textContent = `${formatoNumero(m.aciertos)}/${formatoNumero(m.turno)}`;
+    $("#f-pct").textContent = `${pct} % de aciertos`;
+    $("#f-racha").textContent = formatoNumero(m.turno);
+    $("#f-tiempo").textContent = formatoDuracion(m.segundos);
+
+    const sellos = $("#sellos");
+    sellos.textContent = "";
+    Object.keys(m.paises).map((id) => PAIS[id]).sort((a, b) => a.pais.localeCompare(b.pais, "es")).forEach((p, i) => {
+      const d = document.createElement("div");
+      d.className = "sello-pais";
+      d.style.animationDelay = Math.min(i * 10, 1500) + "ms";
+      d.title = `${p.pais} — ${p.capital}`;
+      d.innerHTML = `<img src="${rutaBandera(p.id)}" alt="" loading="lazy"><i>✓</i><span>${escapar(p.pais)}</span>`;
+      sellos.appendChild(d);
+    });
+    const lista = $("#lista-fallos");
+    lista.textContent = "";
+    const dificiles = P.masFallados(m, 10);
+    for (const { id, fallos } of dificiles) {
+      const p = PAIS[id];
+      const li = document.createElement("li");
+      li.innerHTML = `<img src="${rutaBandera(id)}" alt=""><strong>${escapar(p.pais)}</strong> → ${escapar(p.capital)}` +
+        `<span class="tu">${fallos} ${fallos === 1 ? "fallo" : "fallos"}</span>`;
+      lista.appendChild(li);
+    }
+    $("#caja-fallos").hidden = !dificiles.length;
+    $("#btn-repetir-fallos").hidden = true;
+    $("#btn-otra").hidden = true;
+    window.Muro.alTerminar({ publicable: false });
+    ronda = null;
+    mostrarPantalla("final");
+    confeti(220);
+    sonido.fanfarria();
+  }
+
   $("#btn-repetir-fallos").addEventListener("click", () => {
     const pool = ronda.historial.filter((h) => !h.ok).map((h) => h.q.p);
     empezarRonda(pool, { repaso: true });
@@ -966,7 +1240,7 @@
       siguiente();
       return;
     }
-    if (ajustes.modo === "opciones" && !ronda.respondida && /^[1-4]$/.test(e.key)) {
+    if (modoActual() === "opciones" && !ronda.respondida && /^[1-4]$/.test(e.key)) {
       const b = $("#opciones4").children[Number(e.key) - 1];
       if (b && !b.disabled) b.click();
     }
@@ -1044,9 +1318,103 @@
   }
 
   /* ------------------------------------------------------------------
+     Tus datos: lo guardado en el navegador y la copia de seguridad en JSON
+     ------------------------------------------------------------------ */
+  function estadoDatos(texto, error = false) {
+    const e = $("#md-estado");
+    e.textContent = texto;
+    e.classList.toggle("error", error);
+  }
+  function pintarMisDatos() {
+    const historial = almacen.leer("capitales.historial", []);
+    const maratones = almacen.leer("capitales.maratones", []);
+    const m = leerMaraton();
+    const partes = [historial.length ? `${historial.length} ${historial.length === 1 ? "ronda jugada" : "rondas jugadas"}` : "aún ninguna ronda"];
+    if (m) partes.push(`una maratón en curso (${P.dominados(m)} de ${P.total(m)})`);
+    if (maratones.length) partes.push(`${maratones.length} ${maratones.length === 1 ? "maratón completada" : "maratones completadas"}`);
+    $("#md-resumen").textContent = `Se guardan solos en este navegador: ${partes.join(", ")}. ` +
+      "Descarga una copia para seguir en otro ordenador o por si borras los datos del navegador.";
+    const lista = $("#lista-historial");
+    lista.textContent = "";
+    for (const h of historial.slice(-10).reverse()) {
+      const li = document.createElement("li");
+      const fecha = new Date(h.fecha);
+      const modalidad = [TEXTO_DIR[h.dir], TEXTO_MODO[h.modo], `${h.preguntas} preguntas`, h.zona ? textoZona(h.zona) : ""].filter(Boolean).join(" · ");
+      li.innerHTML = `<span class="fecha"></span><span class="modalidad"></span><span>${h.aciertos}/${h.preguntas}</span><span class="puntos">${formatoNumero(h.puntos || 0)} puntos</span>`;
+      li.querySelector(".fecha").textContent = isNaN(fecha) ? "" : fecha.toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + ", " + fecha.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+      li.querySelector(".modalidad").textContent = modalidad + (h.completa === false ? " (sin terminar)" : "");
+      lista.appendChild(li);
+    }
+    $("#md-historial").hidden = !historial.length;
+  }
+
+  function datosGuardados() {
+    return {
+      ajustes, records: almacen.leer("capitales.records", {}), historial: almacen.leer("capitales.historial", []),
+      maraton: leerMaraton(), maratones: almacen.leer("capitales.maratones", []),
+    };
+  }
+  $("#btn-descargar").addEventListener("click", () => {
+    const copia = JSON.stringify(P.exportar(datosGuardados()), null, 1);
+    const url = URL.createObjectURL(new Blob([copia], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `capitales-progreso-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    estadoDatos("Copia descargada. Para recuperarla, usa «Cargar mi progreso».");
+  });
+
+  let cargaPendiente = null;
+  function describirCopia(d) {
+    const fecha = d.exportado ? new Date(d.exportado) : null;
+    const partes = [`${d.historial.length} ${d.historial.length === 1 ? "ronda" : "rondas"}`];
+    if (d.maraton) partes.unshift(`una maratón con ${P.dominados(d.maraton)} de ${P.total(d.maraton)} países dominados`);
+    return `Copia${fecha && !isNaN(fecha) ? ` del ${fecha.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}` : ""}: ${partes.join(" y ")}.`;
+  }
+  function aplicarCarga() {
+    const d = cargaPendiente;
+    cargaPendiente = null;
+    $("#md-confirmar").hidden = true;
+    if (!d) return;
+    if (d.ajustes) ajustes = limpiarAjustes(d.ajustes, ajustes);
+    almacen.guardar("capitales.records", d.records);
+    almacen.guardar("capitales.historial", d.historial);
+    almacen.guardar("capitales.maratones", d.maratones);
+    guardarMaraton(d.maraton);
+    refrescarOpciones();
+    pintarMaratonCurso();
+    pintarMisDatos();
+    estadoDatos("Progreso cargado." + (d.maraton ? " Pulsa «Continuar maratón» para seguir donde lo dejaste." : ""));
+  }
+  $("#btn-cargar").addEventListener("click", () => $("#archivo-progreso").click());
+  $("#archivo-progreso").addEventListener("change", async (e) => {
+    const archivo = e.target.files[0];
+    e.target.value = "";
+    if (!archivo) return;
+    let texto;
+    try { texto = await archivo.text(); } catch { estadoDatos("No se ha podido leer el archivo.", true); return; }
+    const r = P.validar(texto, IDS);
+    if (!r.ok) { estadoDatos(r.error, true); return; }
+    cargaPendiente = r.datos;
+    const actual = datosGuardados();
+    const hayAlgo = actual.maraton || actual.historial.length || actual.maratones.length || Object.keys(actual.records).length;
+    if (!hayAlgo) { aplicarCarga(); return; }
+    estadoDatos("");
+    $("#md-confirmar-texto").textContent = `${describirCopia(r.datos)} Sustituirá lo que hay guardado ahora en este navegador.`;
+    $("#md-confirmar").hidden = false;
+    $("#btn-cancelar-carga").focus();
+  });
+  $("#btn-confirmar-carga").addEventListener("click", aplicarCarga);
+  $("#btn-cancelar-carga").addEventListener("click", () => { cargaPendiente = null; $("#md-confirmar").hidden = true; });
+
+  /* ------------------------------------------------------------------
      Navegación y arranque
      ------------------------------------------------------------------ */
   function irAInicio() {
+    if (ronda && ronda.maraton && !$("#pantalla-juego").hidden) { pausarMaraton(); return; }
     if (ronda && !$("#pantalla-juego").hidden && ronda.historial.length) {
       // Salir a mitad de ronda la cierra con lo jugado hasta ahora.
       $("#btn-abandonar").click();

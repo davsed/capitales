@@ -591,6 +591,91 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
 .ultimos .ultimo-puntos { font-variant-numeric: tabular-nums; }
 .ultimos .modalidad { font-size: 12.5px; color: var(--tinta-suave); }
 
+/* ---------- Maratón ---------- */
+.botonera { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.maraton-curso {
+  display: grid; gap: 12px; background: var(--panel); color: var(--ficha-tinta); border-radius: var(--radio);
+  padding: 18px 20px; box-shadow: var(--sombra);
+}
+.mc-cabecera h2 { margin: 0; font: 900 28px/1 var(--f-display); text-transform: uppercase; letter-spacing: 0.02em; color: var(--senal); }
+.mc-modalidad { margin: 4px 0 0; font-size: 14px; color: rgba(246, 241, 227, 0.75); }
+.mc-cifra { margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.mc-cifra strong { font: 900 48px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.mc-cifra span { font-size: 16px; color: rgba(246, 241, 227, 0.85); }
+.mc-cifra b { font-weight: 700; }
+.mc-barra { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: rgba(246, 241, 227, 0.14); }
+.mc-barra span { display: block; height: 100%; width: 0; transition: width 0.8s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.mc-barra .dom { background: var(--ok); }
+.mc-barra .cam { background: var(--senal); }
+.mc-leyenda { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12.5px; color: rgba(246, 241, 227, 0.75); }
+.mc-leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: rgba(246, 241, 227, 0.25); margin-left: 6px; }
+.mc-leyenda i:first-child { margin-left: 0; }
+.mc-leyenda i.dom { background: var(--ok); }
+.mc-leyenda i.cam { background: var(--senal); }
+.mc-datos { margin: 0; font-size: 14px; color: rgba(246, 241, 227, 0.75); }
+.mc-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.mc-acciones .btn-principal { justify-self: auto; }
+.maraton-curso .btn-texto { color: rgba(246, 241, 227, 0.75); }
+.maraton-curso .btn-texto:hover { color: var(--ficha-tinta); background: rgba(246, 241, 227, 0.1); }
+.mc-confirmar { display: grid; gap: 8px; padding: 12px 14px; border-radius: 10px; background: rgba(246, 241, 227, 0.08); }
+.mc-confirmar p { margin: 0; }
+.mc-confirmar .btn-secundario { background: transparent; color: #ff8a7f; border-color: #ff8a7f; }
+
+.confirmar-nueva {
+  flex: 1 1 100%; display: grid; gap: 8px; padding: 12px 14px; border-radius: 10px;
+  background: var(--superficie); border: 1.5px solid var(--senal-fuerte);
+}
+.confirmar-nueva p { margin: 0; font-weight: 600; }
+.confirmar-nueva .btn-principal { justify-self: auto; }
+
+/* Contador de aciertos seguidos: círculo → / → X → asterisco que estalla */
+.contador-maraton { flex: none; width: 54px; height: 54px; }
+.contador-maraton svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.contador-maraton .aro { fill: none; stroke: var(--tinta-suave); stroke-width: 2.5; transition: stroke 0.3s; }
+.contador-maraton .trazo {
+  stroke: var(--tinta); stroke-width: 3.4; stroke-linecap: round; stroke-dasharray: 25; stroke-dashoffset: 25;
+  transition: stroke-dashoffset 0.4s cubic-bezier(0.3, 0.7, 0.2, 1), stroke 0.3s;
+}
+.contador-maraton[data-racha="1"] .t1,
+.contador-maraton[data-racha="2"] .t1, .contador-maraton[data-racha="2"] .t2,
+.contador-maraton[data-racha="3"] .trazo { stroke-dashoffset: 0; }
+.contador-maraton[data-racha="3"] .trazo, .contador-maraton[data-racha="3"] .aro { stroke: var(--ok); }
+.contador-maraton.sin-transicion .trazo, .contador-maraton.sin-transicion .aro { transition: none; }
+.contador-maraton .estallido { fill: none; stroke: var(--senal-fuerte); stroke-width: 3; stroke-linecap: round; opacity: 0; transform-origin: 22px 22px; }
+.contador-maraton.explota svg { animation: explota 1s cubic-bezier(0.2, 0.9, 0.3, 1) 0.35s forwards; }
+.contador-maraton.explota .estallido { animation: rayos 0.8s ease-out 0.35s forwards; }
+.contador-maraton.reinicia svg { animation: temblor 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes explota {
+  0% { transform: scale(1) rotate(0); opacity: 1; }
+  35% { transform: scale(1.6) rotate(30deg); opacity: 1; }
+  100% { transform: scale(0.1) rotate(120deg); opacity: 0; }
+}
+@keyframes rayos { 0% { opacity: 1; transform: scale(0.7); } 100% { opacity: 0; transform: scale(1.9); } }
+.veredicto .linea-maraton { font-weight: 600; color: var(--tinta); }
+.veredicto .linea-maraton.dominado { color: var(--ok); }
+
+/* ---------- Tus datos ---------- */
+.mis-datos {
+  grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 20px;
+  background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--radio); padding: 16px 20px;
+}
+.md-cabecera h2 { margin: 0; font: 900 24px/1 var(--f-display); text-transform: uppercase; letter-spacing: 0.02em; }
+.md-cabecera .ayuda { margin-top: 4px; }
+.md-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.md-confirmar, .md-estado, .md-historial { grid-column: 1 / -1; }
+.md-confirmar { display: grid; gap: 8px; padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--senal-fuerte); }
+.md-confirmar p { margin: 0; font-weight: 600; }
+.md-confirmar .btn-principal { justify-self: auto; }
+.md-estado { margin: 0; font-size: 14px; color: var(--ok); font-weight: 600; }
+.md-estado:empty { display: none; }
+.md-estado.error { color: var(--mal); }
+.md-historial summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tinta-suave); }
+.lista-historial { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+.lista-historial li { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 0; border-bottom: 1px dashed var(--linea); }
+.lista-historial li:last-child { border-bottom: 0; }
+.lista-historial .fecha { color: var(--tinta-suave); min-width: 7.5em; font-variant-numeric: tabular-nums; }
+.lista-historial .puntos { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+
 /* ---------- Pie ---------- */
 .pie {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; padding: 0 16px 32px;
@@ -617,6 +702,7 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
   .marcador { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .muro-cuerpo { grid-template-columns: minmax(0, 1fr); }
   .publicar { grid-template-columns: minmax(0, 1fr); }
+  .mis-datos { grid-template-columns: minmax(0, 1fr); }
   .final-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 620px) {
