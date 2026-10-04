@@ -110,13 +110,29 @@
   function pintarTablero(el, texto, { anchoMax = 46, conSonido = true, unaLinea = false, preferirLinea = false } = {}) {
     const palabras = texto.toUpperCase().split(/\s+/).filter(Boolean);
     const larga = unaLinea ? Math.max(texto.length + 0.5 * (palabras.length - 1), 8) : Math.max(...palabras.map((w) => w.length), 6);
-    const disponible = (el.clientWidth || 600) - (unaLinea ? 0 : 36);
+    el.textContent = ""; // se mide sin las fichas del nombre anterior
+    const estilo = getComputedStyle(el);
+    const relleno = unaLinea ? 0 : parseFloat(estilo.paddingLeft) + parseFloat(estilo.paddingRight) + 4;
+    const disponible = (el.clientWidth || 600) - relleno;
     let ancho = Math.max(unaLinea ? 8 : 14, Math.min(anchoMax, Math.floor(disponible / (larga + 0.6)) - 3));
     if (preferirLinea) {
-      // En una sola línea si cabe con fichas de buen tamaño (3 px entre letras y 0,45 fichas entre palabras)
-      const letras = palabras.join("").length;
-      const enLinea = Math.floor((disponible - (letras - palabras.length) * 3) / (letras + 0.45 * (palabras.length - 1)));
-      if (enLinea >= 30) ancho = Math.min(anchoMax, enLinea);
+      // Para que la franja no crezca con los nombres largos: en una línea si cabe con fichas de buen tamaño;
+      // si no, en el ordenador, como mucho en dos. Simula cómo parte las líneas el navegador
+      // (3 px entre letras y 0,45 fichas entre palabras).
+      const lineas = (n) => {
+        let k = 1, linea = 0;
+        for (const p of palabras) {
+          const w = p.length * n + (p.length - 1) * 3;
+          if (w > disponible) return Infinity; // una palabra que no cabe ni sola
+          if (linea && linea + 0.45 * n + w > disponible) { k++; linea = w; } else linea += (linea ? 0.45 * n : 0) + w;
+        }
+        return k;
+      };
+      const mayor = (maxLineas, minimo) => { let n = anchoMax; while (n > minimo && lineas(n) > maxLineas) n--; return n; };
+      const ancha = disponible > 400;
+      const enUna = mayor(1, 8);
+      if (enUna >= (ancha ? 22 : 30)) ancho = enUna;
+      else if (ancha) ancho = mayor(2, 14);
     }
     el.style.setProperty("--ficha-w", ancho + "px");
     el.textContent = "";
@@ -634,7 +650,6 @@
   const pantallas = ["inicio", "juego", "final", "tabla", "muro"];
   const NAV = { tabla: "#nav-tabla", muro: "#nav-muro" };
   function mostrarPantalla(nombre) {
-    document.body.classList.toggle("modo-juego", nombre === "juego");
     for (const p of pantallas) $("#pantalla-" + p).hidden = p !== nombre;
     for (const sel of ["#nav-jugar", "#nav-tabla", "#nav-muro"]) $(sel).removeAttribute("aria-current");
     $(NAV[nombre] || "#nav-jugar").setAttribute("aria-current", "page");
@@ -832,11 +847,12 @@
     etiqueta.classList.toggle("capital", !esPais);
     const opciones = modoActual() === "opciones";
     $("#contador-maraton").hidden = !r.maraton;
+    $("#caja-pregunta").classList.toggle("con-contador", !!r.maraton);
     if (r.maraton) pintarContador(r.maraton.paises[q.p.id].racha);
-    $("#instruccion").textContent = (esPais
+    $("#instruccion").innerHTML = (esPais
       ? (opciones ? "¿Cuál es su capital?" : "Escribe su capital")
       : (opciones ? "¿De qué país es capital?" : "Escribe el país del que es capital")) +
-      (r.maraton && P.esRelleno(r.maraton, q.p.id) ? " · repaso de uno ya dominado (no cuenta)" : "");
+      (r.maraton && P.esRelleno(r.maraton, q.p.id) ? "<small>Repaso de uno ya dominado: no cuenta</small>" : "");
     const bandera = $("#bandera-pregunta");
     // La bandera solo se enseña cuando no delata la respuesta.
     if (esPais) { bandera.src = rutaBandera(q.p.id); bandera.alt = `Bandera de ${q.p.pais}`; bandera.hidden = false; }
@@ -847,9 +863,7 @@
     $("#acciones-pregunta").hidden = false;
     $("#btn-pista").disabled = false;
     $("#texto-pista").hidden = true;
-    // En el ordenador el nombre sale más grande (sin pasarse si la pantalla es baja)
-    const anchoFicha = innerWidth >= 1000 ? (innerHeight >= 820 ? 64 : 54) : 46;
-    pintarTablero($("#tablero"), esPais ? q.p.pais : q.p.capital, { anchoMax: anchoFicha, preferirLinea: true });
+    pintarTablero($("#tablero"), esPais ? q.p.pais : q.p.capital, { anchoMax: 40, preferirLinea: true });
     anunciar(`${esPais ? "País" : "Capital"}: ${esPais ? q.p.pais : q.p.capital}`);
 
     if (opciones) {

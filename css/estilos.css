@@ -320,39 +320,41 @@ a.nav-btn { color: var(--tinta-suave); }
 .dato-hud.racha.en-llamas span, .dato-hud.racha.en-llamas strong { color: var(--senal-tinta); }
 
 /* ---------- Pregunta ---------- */
-.escena { display: grid; gap: 14px; }
-/* Tarjeta oscura de la pregunta: bandera, nombre y cruces en grande; debajo del nombre, qué es y qué hay que contestar */
-.pregunta {
-  position: relative; display: grid; gap: 8px; padding: 14px 18px;
+/* La pregunta y la respuesta van en una columna centrada; el revelado usa todo el ancho del marcador */
+.escena { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.escena > .pregunta, .escena > .zona-respuesta { width: 100%; max-width: 880px; margin-inline: auto; }
+/* Bandera | qué es y qué hay que contestar | franja negra con el nombre (y el reloj y el símbolo de la maratón) */
+.pregunta { position: relative; display: flex; align-items: center; gap: 14px; }
+.bandera-pregunta {
+  flex: none; width: 108px; height: auto; border-radius: 7px; box-shadow: var(--sombra);
+  animation: aparecer 0.5s ease-out both;
+}
+@keyframes aparecer { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+.pregunta-cabecera { flex: none; width: 128px; display: grid; gap: 6px; justify-items: start; }
+.etiqueta-tipo {
+  display: inline-block; padding: 5px 10px; border-radius: 6px; font: 800 16px/1 var(--f-display);
+  letter-spacing: 0.1em; text-transform: uppercase; background: var(--tinta); color: var(--fondo);
+}
+.etiqueta-tipo.capital { background: var(--senal); color: var(--senal-tinta); }
+.instruccion { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.3; color: var(--tinta-suave); }
+.instruccion small { display: block; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--senal-fuerte); }
+.banda {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 12px 16px; min-height: 84px;
   background: var(--panel); color: var(--ficha-tinta); border-radius: var(--radio);
   box-shadow: var(--sombra), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
-.pregunta-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; min-height: 28px; }
-.etiqueta-tipo {
-  display: inline-block; padding: 4px 9px; border-radius: 5px; font: 800 15px/1 var(--f-display);
-  letter-spacing: 0.12em; text-transform: uppercase; background: var(--ficha-tinta); color: var(--panel);
-}
-.etiqueta-tipo.capital { background: var(--senal); color: var(--senal-tinta); }
-.instruccion { margin: 0; min-width: 0; font-weight: 600; font-size: 15px; color: rgba(246, 241, 227, 0.72); text-align: center; }
-.reloj { position: relative; flex: none; width: 40px; height: 40px; display: grid; place-items: center; }
+.banda .tablero { flex: 1; min-width: 0; padding: 0; min-height: 0; background: none; box-shadow: none; }
+.reloj { position: relative; flex: none; width: 42px; height: 42px; display: grid; place-items: center; }
 .reloj svg { position: absolute; inset: 0; transform: rotate(-90deg); }
 .reloj circle { fill: none; stroke-width: 3.5; }
 .reloj-fondo { stroke: rgba(246, 241, 227, 0.2); }
 .reloj-arco { stroke: var(--senal); stroke-dasharray: 97.4; stroke-dashoffset: 0; stroke-linecap: round; }
 .reloj.urgente .reloj-arco { stroke: #ff7a6e; }
 .reloj span { font: 800 16px/1 var(--f-display); font-variant-numeric: tabular-nums; }
-.fila-tablero { display: flex; align-items: center; gap: 20px; }
-.centro-pregunta { flex: 1; min-width: 0; display: grid; gap: 6px; }
-.pregunta .tablero { min-width: 0; padding: 4px 0; min-height: 0; background: none; box-shadow: none; }
-.bandera-pregunta {
-  flex: none; width: 132px; height: auto; border-radius: 8px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
-  animation: aparecer 0.5s ease-out both;
-}
-@keyframes aparecer { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
 
 /* Sello de pasaporte */
 .sello {
-  position: absolute; right: 170px; bottom: -26px; z-index: 3; pointer-events: none;
+  position: absolute; right: 3%; bottom: -40px; z-index: 3; pointer-events: none;
   padding: 8px 18px; border: 4px solid currentColor; border-radius: 12px;
   font: 900 34px/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--ok); background: color-mix(in srgb, var(--superficie) 80%, transparent);
@@ -363,6 +365,7 @@ a.nav-btn { color: var(--tinta-suave); }
 .sello::before {
   content: ""; position: absolute; inset: 3px; border: 1.5px solid currentColor; border-radius: 7px; opacity: 0.7;
 }
+.pregunta.con-contador .sello { right: 104px; } /* a la izquierda del símbolo de la maratón */
 .sello.mal { color: var(--mal); transform: rotate(7deg); }
 .sello.casi { color: var(--senal-fuerte); }
 @keyframes sellar {
@@ -420,13 +423,16 @@ a.nav-btn { color: var(--tinta-suave); }
 .acciones-secundarias { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
 
 /* ---------- Revelado ---------- */
+/* Texto, foto y mapa en tres columnas, para verlo todo sin hacer scroll (en el móvil, uno debajo de otro) */
 .revelado {
   display: grid; gap: 16px; padding: 18px; background: var(--superficie); border: 1px solid var(--linea);
   border-radius: var(--radio); box-shadow: var(--sombra); animation: aparecer 0.35s ease-out both;
+  grid-template-columns: minmax(0, 1fr);
 }
-.revelado-info { display: grid; gap: 12px; align-content: start; min-height: 0; }
+.revelado-info { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.revelado-info .siguiente-fila { margin-top: auto; }
 .veredicto { display: grid; gap: 6px; }
-.veredicto .par { margin: 0; font: 800 clamp(26px, 2.6vw, 38px)/1.05 var(--f-display); text-transform: uppercase; letter-spacing: 0.01em; }
+.veredicto .par { margin: 0; font: 800 clamp(24px, 3vw, 30px)/1.05 var(--f-display); text-transform: uppercase; letter-spacing: 0.01em; }
 .veredicto .par .flecha { color: var(--senal-fuerte); padding: 0 0.2em; }
 .veredicto .detalle { margin: 0; color: var(--tinta-suave); }
 .veredicto .detalle strong { color: var(--tinta); }
@@ -674,7 +680,7 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
 .confirmar-nueva .btn-principal { justify-self: auto; }
 
 /* Contador de aciertos seguidos, dentro de la tarjeta de la pregunta: círculo → / → X → asterisco */
-.contador-maraton { position: relative; flex: none; width: 124px; height: 124px; }
+.contador-maraton { position: relative; flex: none; width: 70px; height: 70px; }
 .contador-maraton svg { width: 100%; height: 100%; overflow: visible; display: block; }
 .contador-maraton .aro { fill: none; stroke: rgba(246, 241, 227, 0.55); stroke-width: 5; transition: stroke 0.3s; }
 .contador-maraton .trazo {
@@ -692,8 +698,8 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
 /* Cinta «¡Dominado!», cruzada sobre la parte baja del círculo */
 .contador-aviso {
   position: absolute; left: 50%; top: 84%; opacity: 0; pointer-events: none; white-space: nowrap;
-  padding: 5px 10px 4px; border-radius: 6px; background: #4fdc8f; color: #0d2b1c;
-  font: 900 22px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 8px 3px; border-radius: 5px; background: #4fdc8f; color: #0d2b1c;
+  font: 900 17px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase;
   box-shadow: 0 3px 0 #1f8a52, 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 26px rgba(79, 220, 143, 0.55);
   transform: translate(-50%, -50%) scale(0.4); overflow: hidden;
 }
@@ -749,7 +755,7 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-7deg); }
 }
 @keyframes brillo-cinta { from { left: -60%; } to { left: 130%; } }
-.pregunta.dominado { animation: tarjeta-dominada 2.8s ease-out 0.45s both; }
+.pregunta.dominado .banda { animation: tarjeta-dominada 2.8s ease-out 0.45s both; }
 @keyframes tarjeta-dominada {
   0% { box-shadow: var(--sombra), inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 0 0 rgba(79, 220, 143, 0); }
   20% { box-shadow: var(--sombra), inset 0 0 0 2px #4fdc8f, 0 0 0 6px rgba(79, 220, 143, 0.45), 0 0 70px rgba(79, 220, 143, 0.5); }
@@ -801,37 +807,18 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
 /* ---------- Confeti ---------- */
 #confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
 
-/* ---------- Pantalla de juego a lo ancho (ordenador) ---------- */
-@media (min-width: 1000px) {
-  body.modo-juego .contenedor {
-    max-width: 1680px; padding-block: 14px 18px; display: flex; flex-direction: column;
-    min-height: calc(100vh - 62px - env(safe-area-inset-top, 0px));
-  }
-  body.modo-juego #pantalla-juego { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  body.modo-juego .pie { display: none; }
-  #pantalla-juego .hud { gap: 6px; margin-bottom: 12px; }
-  #pantalla-juego .ruta { height: 20px; }
-  #pantalla-juego .ruta-linea { top: 9px; }
-  #pantalla-juego .avion { width: 20px; height: 20px; }
-  #pantalla-juego .dato-hud { padding: 6px 12px; }
-  #pantalla-juego .dato-hud strong { font-size: 24px; }
-  #pantalla-juego .escena { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-  .zona-respuesta { grid-template-columns: minmax(0, 1fr) auto; column-gap: 18px; align-items: start; }
-  .zona-respuesta .respuesta, .zona-respuesta .opciones4 { grid-column: 1; grid-row: 1; }
-  .zona-respuesta .acciones-secundarias { grid-column: 2; grid-row: 1; flex-wrap: nowrap; align-self: center; }
+/* ---------- Revelado en columnas ---------- */
+@media (min-width: 621px) {
+  .revelado { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+  .revelado-info { grid-column: 1 / -1; }
+}
+@media (min-width: 900px) {
+  /* Foto (4:3) y mapa (16:10) salen de la misma altura */
+  .revelado { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+  .revelado-info { grid-column: auto; font-size: 15px; }
+  .revelado-info .veredicto .nota { font-size: 13px; padding: 8px 10px; }
   .opciones4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .opcion { min-height: 56px; }
-  .revelado {
-    flex: 1 1 0px; min-height: 270px; grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1fr) minmax(0, 1.4fr);
-    grid-template-rows: minmax(0, 1fr); align-items: stretch;
-  }
-  .revelado-info { display: flex; flex-direction: column; overflow: auto; padding: 6px; margin: -6px; }
-  .contador-maraton { margin-right: 10px; }
-  .revelado-info .siguiente-fila { margin-top: auto; }
-  .foto, .minimapa { grid-template-rows: minmax(0, 1fr) auto; }
-  .foto-marco { aspect-ratio: auto; height: 100%; }
-  .mapa-marco { height: 100%; }
-  #mapa { aspect-ratio: auto; height: 100%; }
+  .opcion { min-height: 56px; font-size: 17px; }
 }
 
 /* ---------- Responsive ---------- */
@@ -853,21 +840,17 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
   .segmentado span { font-size: 14px; }
   .opciones4 { grid-template-columns: minmax(0, 1fr); }
   .opcion { min-height: 54px; font-size: 17px; }
-  .pregunta { padding: 10px 12px 16px; }
+  .pregunta { flex-wrap: wrap; gap: 10px 12px; }
+  .bandera-pregunta { width: 72px; }
+  .pregunta-cabecera { flex: 1; width: auto; min-width: 0; }
   .instruccion { font-size: 14px; }
-  .fila-tablero {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "bandera cabecera contador" "tablero tablero tablero";
-    gap: 8px 10px; align-items: center;
-  }
-  .centro-pregunta { display: contents; }
-  .bandera-pregunta { grid-area: bandera; width: 84px; }
-  .pregunta-cabecera { grid-area: cabecera; flex-direction: column; gap: 6px; }
-  .pregunta .tablero { grid-area: tablero; }
-  .contador-maraton { grid-area: contador; width: 78px; height: 78px; }
-  .contador-aviso { font-size: 14px; padding: 4px 7px 3px; }
+  .banda { flex: 1 1 100%; padding: 10px 12px; min-height: 72px; gap: 10px; }
+  .contador-maraton { width: 56px; height: 56px; }
+  .contador-aviso { font-size: 13px; padding: 3px 6px 2px; }
   .campo { flex-direction: column; }
   .campo .btn-principal { width: 100%; }
-  .sello { font-size: 26px; bottom: -18px; right: 24px; }
+  .sello { font-size: 26px; bottom: -30px; right: 3%; }
+  .pregunta.con-contador .sello { right: 78px; }
   .revelado { padding: 16px; }
   .col-cont, .tabla td.c-cont, .col-fuentes, .tabla td.c-fuentes { display: none; }
   .dato-hud strong { font-size: 22px; }
