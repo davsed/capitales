@@ -294,7 +294,28 @@ a.nav-btn { color: var(--tinta-suave); }
 
 /* ---------- HUD ---------- */
 .hud { display: grid; gap: 14px; margin-bottom: 20px; }
-.ruta { position: relative; height: 26px; }
+.hud-fila { display: flex; align-items: center; gap: 14px; }
+.ruta { position: relative; height: 26px; flex: 1; min-width: 60px; }
+/* Interruptores de la partida: «Hablar» y «Manos libres», que se pueden cambiar en cualquier momento */
+.conmutadores { display: flex; gap: 6px; flex: none; }
+.conmutador {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--linea); background: var(--superficie); font-size: 13px; font-weight: 600; color: var(--tinta-suave);
+  user-select: none; -webkit-user-select: none; transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.conmutador svg { width: 15px; height: 15px; }
+.conmutador input {
+  appearance: none; flex: none; width: 30px; height: 18px; margin: 0; border-radius: 999px; background: var(--linea);
+  position: relative; cursor: pointer; transition: background 0.2s;
+}
+.conmutador input::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.2s;
+}
+.conmutador input:checked { background: var(--ok); }
+.conmutador input:checked::after { transform: translateX(12px); }
+.conmutador:has(input:checked) { color: var(--tinta); border-color: color-mix(in srgb, var(--ok) 55%, var(--linea)); }
+.conmutador input:focus-visible { outline: 2px solid var(--tinta); outline-offset: 2px; }
 .ruta-linea {
   position: absolute; left: 0; right: 0; top: 12px; height: 2px;
   background-image: linear-gradient(90deg, var(--linea) 60%, transparent 60%); background-size: 12px 2px;
@@ -338,6 +359,18 @@ a.nav-btn { color: var(--tinta-suave); }
 .etiqueta-tipo.capital { background: var(--senal); color: var(--senal-tinta); }
 .instruccion { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.3; color: var(--tinta-suave); }
 .instruccion small { display: block; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--senal-fuerte); }
+/* Micrófono: «Escucha…» mientras el juego lee, «Te escucho» con el punto rojo latiendo, «Toca para hablar» si está parado */
+.micro {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 10px 4px 7px; border-radius: 999px;
+  border: 1.5px solid var(--linea); background: var(--superficie); color: var(--tinta-suave); font-size: 13px; font-weight: 700;
+}
+.micro svg { flex: none; width: 15px; height: 15px; }
+.micro span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.micro[data-estado="escuchando"] { border-color: var(--mal); color: var(--mal); background: var(--mal-suave); }
+.micro[data-estado="escuchando"] svg { animation: latido-micro 1.1s ease-in-out infinite; }
+.micro[data-estado="leyendo"] svg { opacity: 0.5; }
+.micro:hover { border-color: var(--tinta); }
+@keyframes latido-micro { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
 .banda {
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 12px 16px; min-height: 84px;
   background: var(--panel); color: var(--ficha-tinta); border-radius: var(--radio);
@@ -390,6 +423,7 @@ a.nav-btn { color: var(--tinta-suave); }
 }
 .campo input:focus { outline: none; border-color: var(--tinta); box-shadow: 0 0 0 4px color-mix(in srgb, var(--senal) 45%, transparent); }
 .campo input::placeholder { color: var(--tinta-suave); opacity: 0.7; font-weight: 500; }
+.campo input.dictando { color: var(--tinta-suave); font-style: italic; }
 .campo .btn-principal { justify-self: auto; }
 .tiembla { animation: temblor 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
 @keyframes temblor {
@@ -804,6 +838,14 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
 .lista-seccion { display: grid; gap: 12px; margin-top: 28px; scroll-margin-top: 80px; }
 .lista-seccion h2 { margin: 0; font: 900 clamp(28px, 4vw, 40px)/1 var(--f-display); text-transform: uppercase; }
 
+/* ---------- Aviso flotante (voz: sin permiso, sin micrófono…) ---------- */
+.aviso-flotante {
+  position: fixed; left: 16px; right: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60;
+  width: fit-content; max-width: 520px; margin: 0 auto; padding: 12px 16px; border-radius: 12px;
+  background: var(--tinta); color: var(--fondo); font-size: 14px; font-weight: 600; box-shadow: var(--sombra);
+  animation: aparecer 0.3s ease-out both;
+}
+
 /* ---------- Confeti ---------- */
 #confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
 
@@ -847,6 +889,9 @@ mark { background: color-mix(in srgb, var(--senal) 55%, transparent); color: inh
   .banda { flex: 1 1 100%; padding: 10px 12px; min-height: 72px; gap: 10px; }
   .contador-maraton { width: 56px; height: 56px; }
   .contador-aviso { font-size: 13px; padding: 3px 6px 2px; }
+  .hud-fila { gap: 10px; }
+  .conmutador { font-size: 12px; padding: 3px 8px 3px 4px; gap: 5px; }
+  .aviso-flotante { font-size: 13px; }
   .campo { flex-direction: column; }
   .campo .btn-principal { width: 100%; }
   .sello { font-size: 26px; bottom: -30px; right: 3%; }

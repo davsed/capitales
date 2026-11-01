@@ -22,7 +22,7 @@
     },
   };
 
-  const { normalizar, variantes, capitalDe, paisDe, evaluar, distanciaKm, ARTICULO } = window.TABLA;
+  const { normalizar, variantes, capitalDe, paisDe, evaluar, distanciaKm, ARTICULO, evaluarVoz, esNoSe, opcionDicha } = window.TABLA;
   const P = window.PROGRESO;
 
   /* ------------------------------------------------------------------
@@ -81,7 +81,8 @@
       } catch { this.ctx = null; }
       return this.ctx;
     },
-    tono(freq, dur, tipo = "sine", vol = 0.08, retraso = 0) {
+    /** Una nota. «hasta»: frecuencia a la que se desliza; «filtro»: corte de graves (paso bajo) en Hz. */
+    tono(freq, dur, tipo = "sine", vol = 0.08, retraso = 0, { hasta = 0, filtro = 0 } = {}) {
       const ctx = this.asegurar();
       if (!ctx) return;
       const t = ctx.currentTime + retraso;
@@ -89,16 +90,34 @@
       const g = ctx.createGain();
       osc.type = tipo;
       osc.frequency.setValueAtTime(freq, t);
+      if (hasta) osc.frequency.exponentialRampToValueAtTime(hasta, t + dur);
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      osc.connect(g).connect(ctx.destination);
+      let salida = osc;
+      if (filtro) {
+        const f = ctx.createBiquadFilter();
+        f.type = "lowpass";
+        f.frequency.value = filtro;
+        osc.connect(f);
+        salida = f;
+      }
+      salida.connect(g).connect(ctx.destination);
       osc.start(t);
       osc.stop(t + dur + 0.02);
     },
-    acierto() { this.tono(659, 0.14, "triangle", 0.1); this.tono(988, 0.22, "triangle", 0.1, 0.1); },
-    casi() { this.tono(587, 0.14, "triangle", 0.08); this.tono(784, 0.2, "triangle", 0.08, 0.1); },
-    fallo() { this.tono(196, 0.28, "sawtooth", 0.05); this.tono(147, 0.32, "sawtooth", 0.05, 0.12); },
+    // Acierto: «¡ding-ding!», dos campanadas agudas que suben. Fallo: «¡bzz-bzz!», un zumbido grave dos veces.
+    // Cortos (menos de medio segundo) y muy distintos, para saber cómo ha ido sin mirar la pantalla.
+    campana(freq, retraso, vol) {
+      this.tono(freq, 0.3, "sine", vol, retraso);
+      this.tono(freq * 2, 0.12, "sine", vol * 0.3, retraso); // armónico: brillo de campana
+    },
+    acierto() { this.campana(1047, 0, 0.16); this.campana(1568, 0.09, 0.18); },
+    casi() { this.campana(988, 0, 0.13); this.campana(1319, 0.09, 0.15); },
+    fallo() {
+      this.tono(150, 0.15, "square", 0.12, 0, { filtro: 1200 });
+      this.tono(150, 0.24, "square", 0.12, 0.18, { hasta: 105, filtro: 1200 });
+    },
     clic() { this.tono(1400 + Math.random() * 500, 0.018, "square", 0.012); },
     fanfarria() { [523, 659, 784, 1047].forEach((f, i) => this.tono(f, 0.25, "triangle", 0.09, i * 0.12)); },
   };
@@ -489,7 +508,7 @@
      ------------------------------------------------------------------ */
   const AJUSTES_POR_DEFECTO = {
     tipo: "ronda", conts: Object.keys(CONTINENTES), n: 10, dir: "pc", modo: "escribir",
-    tiempo: 0, erratas: true, auto: true, taiwan: false,
+    tiempo: 0, erratas: true, auto: true, taiwan: false, voz: false,
   };
   /** Ajustes válidos a partir de lo guardado (o de una copia cargada): lo que no se reconoce se ignora. */
   function limpiarAjustes(a, base = AJUSTES_POR_DEFECTO) {
@@ -501,7 +520,7 @@
     if (["pc", "cp", "mix"].includes(a.dir)) r.dir = a.dir;
     if (["escribir", "opciones"].includes(a.modo)) r.modo = a.modo;
     if ([0, 10, 20, 30].includes(a.tiempo)) r.tiempo = a.tiempo;
-    for (const k of ["erratas", "auto", "taiwan"]) if (typeof a[k] === "boolean") r[k] = a[k];
+    for (const k of ["erratas", "auto", "taiwan", "voz"]) if (typeof a[k] === "boolean") r[k] = a[k];
     return r;
   }
   let ajustes = limpiarAjustes(almacen.leer("capitales.ajustes", {}));
@@ -565,6 +584,9 @@
     $("#sel-tiempo").value = String(ajustes.tiempo);
     $("#chk-erratas").checked = ajustes.erratas;
     $("#chk-auto").checked = ajustes.auto;
+    $("#chk-voz").checked = ajustes.voz;
+    $("#ajuste-voz").hidden = !vozDisponible;
+    $("#aviso-voz").hidden = !vozDisponible;
     $("#chk-taiwan").checked = ajustes.taiwan;
     $("#chk-erratas").disabled = ajustes.modo === "opciones";
     const record = almacen.leer("capitales.records", {})[firmaAjustes()];
@@ -592,6 +614,7 @@
     if (t.name === "tiempo") ajustes.tiempo = Number(t.value);
     if (t.name === "erratas") ajustes.erratas = t.checked;
     if (t.name === "auto") ajustes.auto = t.checked;
+    if (t.name === "voz") ajustes.voz = t.checked;
     if (t.name === "taiwan") ajustes.taiwan = t.checked;
     refrescarOpciones();
   });
@@ -651,6 +674,7 @@
   const NAV = { tabla: "#nav-tabla", muro: "#nav-muro" };
   function mostrarPantalla(nombre) {
     for (const p of pantallas) $("#pantalla-" + p).hidden = p !== nombre;
+    if (nombre !== "juego") callarVoz();
     for (const sel of ["#nav-jugar", "#nav-tabla", "#nav-muro"]) $(sel).removeAttribute("aria-current");
     $(NAV[nombre] || "#nav-jugar").setAttribute("aria-current", "page");
     if (nombre === "inicio") { iniciarDemo(); pintarMaratonCurso(); pintarMisDatos(); } else clearInterval(temporizadorDemo);
@@ -713,6 +737,7 @@
     clearInterval(temporizadorCrono);
     temporizadorCrono = setInterval(() => { if (ronda) $("#hud-tiempo").textContent = formatoTiempo(tiempoJugado(ronda)); }, 250);
     $("#hud-tiempo").textContent = "0:00";
+    pintarConmutadores();
   }
 
   /* ------------------------------------------------------------------
@@ -874,15 +899,18 @@
       $("#form-respuesta").hidden = false;
       const entrada = $("#entrada");
       entrada.value = "";
+      entrada.classList.remove("dictando");
       entrada.disabled = false;
-      entrada.placeholder = esPais ? "Escribe la capital…" : "Escribe el país…";
+      ponerPlaceholder(q);
       $("#entrada-etiqueta").textContent = esPais ? `Capital de ${q.p.pais}` : `País cuya capital es ${q.p.capital}`;
       $("#btn-comprobar").disabled = false;
-      entrada.focus({ preventScroll: true });
+      // Hablando en el móvil no se abre el teclado
+      if (!(vozActiva() && pantallaTactil)) entrada.focus({ preventScroll: true });
     }
     actualizarHud();
-    iniciarReloj();
-    arrancarCrono();
+    // Con «Hablar», el juego dice la pregunta y luego abre el micrófono: el tiempo empieza cuando acaba de leerla.
+    prepararReloj();
+    vozPregunta(q, () => { if (ronda && !ronda.respondida) { iniciarReloj(); arrancarCrono(); } });
   }
 
   function pintarOpciones(q) {
@@ -904,6 +932,15 @@
       b.addEventListener("click", () => responderOpcion(x));
       caja.appendChild(b);
     });
+  }
+
+  /** El reloj de la pregunta, lleno, mientras el juego la lee en voz alta. */
+  function prepararReloj() {
+    clearInterval(temporizadorReloj);
+    $("#reloj").hidden = !ajustes.tiempo;
+    $("#reloj").classList.remove("urgente");
+    $("#reloj-num").textContent = ajustes.tiempo;
+    $("#reloj-arco").style.strokeDashoffset = "0";
   }
 
   function iniciarReloj() {
@@ -964,6 +1001,8 @@
     const r = ronda;
     const q = r.preguntas[r.i];
     r.respondida = true;
+    callarVoz();
+    $("#entrada").classList.remove("dictando");
     const pensado = pararCrono();
     $("#hud-tiempo").textContent = formatoTiempo(tiempoJugado(r));
     clearInterval(temporizadorReloj);
@@ -1058,16 +1097,17 @@
         : `La capital de <strong>${escapar(x.pais)}</strong> es ${escapar(x.capital)}.`;
     } else {
       const escrito = `«${escapar(texto.trim())}»`;
+      const has = res.voz ? "Has dicho" : "Has escrito";
       if (res.comoCapital && res.comoCapital !== p) {
-        detalle = `Has escrito ${escrito}: es la capital de <strong>${escapar(res.comoCapital.pais)}</strong>.`;
+        detalle = `${has} ${escrito}: es la capital de <strong>${escapar(res.comoCapital.pais)}</strong>.`;
       } else if (res.comoPais && res.comoPais !== p) {
-        detalle = `Has escrito ${escrito}: eso es un país (su capital es <strong>${escapar(res.comoPais.capital)}</strong>).`;
+        detalle = `${has} ${escrito}: eso es un país (su capital es <strong>${escapar(res.comoPais.capital)}</strong>).`;
       } else if (res.comoPais === p) {
-        detalle = `Has escrito ${escrito}: eso es el país, y se pedía su capital.`;
+        detalle = `${has} ${escrito}: eso es el país, y se pedía su capital.`;
       } else if (res.comoCapital === p) {
-        detalle = `Has escrito ${escrito}: esa es la capital, y se pedía el país.`;
+        detalle = `${has} ${escrito}: esa es la capital, y se pedía el país.`;
       } else {
-        detalle = `Has escrito ${escrito}. No es correcto.`;
+        detalle = `${has} ${escrito}. No es correcto.`;
       }
     }
     // Si la respuesta es otro país (o la capital de otro), se dice a qué distancia está del correcto.
@@ -1158,6 +1198,7 @@
   }
 
   function programarSiguiente(ms) {
+    if (ronda) ronda.pausa = ms;
     clearTimeout(temporizadorSiguiente);
     const barra = $("#cuenta-atras");
     barra.classList.remove("activa");
@@ -1239,6 +1280,280 @@
       pista.hidden = false;
       $("#entrada").focus();
     }
+  });
+
+  /* ------------------------------------------------------------------
+     Voz: el juego dice la pregunta en voz alta y escucha la respuesta.
+     Usa lo que trae el navegador (Web Speech API): sin servicios de pago ni cuentas. En Chrome y Edge el
+     audio se transcribe en servidores de Google; en Safari, de Apple. Firefox no lo tiene: allí no se ofrece.
+     ------------------------------------------------------------------ */
+  const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // Dentro de un marco sin permiso para el micrófono (como la vista previa de claude.ai) no se ofrece.
+  const politica = document.featurePolicy || document.permissionsPolicy;
+  const microPermitido = !(politica && politica.allowsFeature && !politica.allowsFeature("microphone"));
+  const vozDisponible = !!Reconocimiento && microPermitido;
+  const pantallaTactil = matchMedia("(pointer: coarse)").matches;
+  const voz = {
+    rec: null,          // reconocimiento en marcha
+    estado: "parado",   // leyendo | escuchando | parado
+    turno: 0,           // sube al cambiar de pregunta o al responder: lo que llegue tarde se descarta
+    pausado: false,     // el jugador ha parado el micrófono en esta pregunta (o se ha puesto a escribir)
+    reintentos: 0,
+    error: "",
+    nota: null,         // mensaje breve en el botón del micrófono («No te entiendo…»)
+    pendiente: null,    // lo que arranca el reloj de la pregunta cuando el juego termina de leerla
+  };
+  const vozActiva = () => vozDisponible && ajustes.voz;
+  const esperandoRespuesta = () => !!ronda && !ronda.respondida && ronda.i >= 0 && !$("#pantalla-juego").hidden;
+
+  let temporizadorAviso = 0;
+  /** Mensaje flotante unos segundos (sin permiso para el micrófono, sin conexión…). */
+  function avisar(texto) {
+    const a = $("#aviso-flotante");
+    a.textContent = texto;
+    a.hidden = false;
+    anunciar(texto);
+    clearTimeout(temporizadorAviso);
+    temporizadorAviso = setTimeout(() => { a.hidden = true; }, 7000);
+  }
+
+  function vozEspanola() {
+    const voces = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    return voces.find((v) => v.lang === "es-ES" && v.localService) || voces.find((v) => v.lang === "es-ES") ||
+      voces.find((v) => /^es\b/i.test(v.lang)) || null;
+  }
+  if (window.speechSynthesis) speechSynthesis.getVoices(); // algunos navegadores cargan las voces la primera vez que se piden
+
+  /** Dice un texto en voz alta y, al terminar, llama a «luego» (también si no hay voz, está silenciado o falla). */
+  function decir(texto, luego) {
+    const turno = voz.turno;
+    let hecho = false;
+    const fin = () => {
+      if (hecho) return;
+      hecho = true;
+      clearTimeout(plazo);
+      if (turno === voz.turno) luego();
+    };
+    const plazo = setTimeout(fin, 1800 + texto.length * 120); // por si el navegador no avisa de que ha terminado
+    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance || !sonido.activo) { fin(); return; }
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(texto);
+      u.lang = "es-ES";
+      const v = vozEspanola();
+      if (v) u.voice = v;
+      u.rate = 1.05;
+      u.onend = fin;
+      u.onerror = fin;
+      speechSynthesis.speak(u);
+    } catch { fin(); }
+  }
+
+  /**
+   * Al salir una pregunta: con «Hablar», la dice en voz alta y después abre el micrófono.
+   * «arrancar» pone en marcha el reloj de la pregunta: en cuanto termina de leerla (o enseguida, sin voz).
+   */
+  function vozPregunta(q, arrancar) {
+    callarVoz();
+    voz.pausado = false;
+    voz.reintentos = 0;
+    voz.nota = null;
+    voz.pendiente = arrancar;
+    if (!vozActiva()) { arrancarPendiente(); pintarMicro(); return; }
+    const nombre = q.dir === "pc" ? q.p.pais : q.p.capital;
+    const tipo = ronda.modalidad.dir === "mix" ? (q.dir === "pc" ? "País: " : "Capital: ") : "";
+    voz.estado = "leyendo";
+    pintarMicro();
+    decir(tipo + nombre, () => { arrancarPendiente(); escuchar(); });
+  }
+  function arrancarPendiente() {
+    const f = voz.pendiente;
+    voz.pendiente = null;
+    if (f) f();
+  }
+
+  function pararReconocimiento() {
+    const rec = voz.rec;
+    voz.rec = null; // así su «onend» sabe que se ha parado a propósito y no vuelve a escuchar
+    if (rec) try { rec.abort(); } catch { /* ya estaba parado */ }
+  }
+
+  /** Apaga el micrófono y la lectura (al responder, al cambiar de pregunta o al salir del juego). */
+  function callarVoz() {
+    voz.turno++;
+    pararReconocimiento();
+    try { if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel(); } catch { /* nada */ }
+    // Si aún se espera la respuesta (se ha apagado «Hablar» mientras leía), el reloj arranca igual.
+    if (esperandoRespuesta()) arrancarPendiente(); else voz.pendiente = null;
+    voz.estado = "parado";
+    pintarMicro();
+  }
+
+  /** El jugador para el micrófono en esta pregunta (lo toca, o se pone a escribir). */
+  function pausarVoz() {
+    voz.pausado = true;
+    pararReconocimiento();
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* nada */ }
+    voz.estado = "parado";
+    pintarMicro();
+  }
+
+  /** Cuando el micrófono no se puede usar: se apaga «Hablar» y se explica por qué. */
+  function apagarVoz(mensaje) {
+    ajustes.voz = false;
+    almacen.guardar("capitales.ajustes", ajustes);
+    callarVoz();
+    pintarConmutadores();
+    $("#chk-voz").checked = false;
+    if (ronda && ronda.i >= 0 && ronda.preguntas[ronda.i]) ponerPlaceholder(ronda.preguntas[ronda.i]);
+    avisar(mensaje);
+  }
+
+  /** Abre el micrófono hasta que haya respuesta. Si se corta por silencio o ruido, vuelve a escuchar. */
+  function escuchar() {
+    pararReconocimiento();
+    if (!vozActiva() || !esperandoRespuesta() || voz.pausado || document.hidden) { voz.estado = "parado"; pintarMicro(); return; }
+    const turno = voz.turno;
+    let rec;
+    try { rec = new Reconocimiento(); } catch { voz.estado = "parado"; pintarMicro(); return; }
+    rec.lang = "es-ES";
+    rec.interimResults = true;
+    rec.maxAlternatives = 5;
+    rec.continuous = false;
+    const inicio = performance.now();
+    rec.onstart = () => {
+      if (voz.rec !== rec) return;
+      voz.estado = "escuchando";
+      pintarMicro();
+    };
+    rec.onresult = (e) => {
+      if (voz.rec !== rec || turno !== voz.turno || !esperandoRespuesta()) return;
+      const resultado = e.results[e.results.length - 1];
+      const alternativas = Array.from({ length: resultado.length }, (_, i) => resultado[i].transcript);
+      if (resultado.isFinal) entendido(alternativas);
+      else oyendo(alternativas[0]);
+    };
+    rec.onerror = (e) => {
+      if (voz.rec !== rec) return;
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        apagarVoz("No hay permiso para usar el micrófono. Puedes darlo desde el candado de la barra de direcciones y volver a activar «Hablar».");
+      } else if (e.error === "audio-capture") {
+        apagarVoz("No se encuentra ningún micrófono. Conecta uno y vuelve a activar «Hablar».");
+      } else if (e.error === "language-not-supported") {
+        apagarVoz("Este navegador no reconoce el español hablado.");
+      } else if (e.error === "network") {
+        voz.error = "red";
+        avisar("Sin conexión no se puede reconocer la voz: escribe la respuesta o toca el micrófono para probar otra vez.");
+      }
+    };
+    rec.onend = () => {
+      if (voz.rec !== rec) return; // parado a propósito
+      voz.rec = null;
+      if (turno !== voz.turno || !esperandoRespuesta()) return;
+      // Se ha cortado sin respuesta (silencio, ruido o algo que no se entiende): vuelve a escuchar.
+      voz.reintentos = performance.now() - inicio < 1500 ? voz.reintentos + 1 : 0;
+      if (voz.error || voz.pausado || voz.reintentos > 3 || !vozActiva()) { voz.estado = "parado"; pintarMicro(); return; }
+      setTimeout(() => { if (turno === voz.turno && !voz.rec) escuchar(); }, 150);
+    };
+    voz.rec = rec;
+    voz.error = "";
+    try {
+      rec.start();
+      voz.estado = "escuchando";
+    } catch { voz.rec = null; voz.estado = "parado"; }
+    pintarMicro();
+  }
+
+  /** Lo que se va oyendo, antes de que termine la frase. */
+  function oyendo(texto) {
+    if (modoActual() === "opciones") { voz.nota = { texto: `«${texto.trim()}»`, hasta: performance.now() + 2500 }; pintarMicro(); return; }
+    const e = $("#entrada");
+    e.value = texto.trim();
+    e.classList.add("dictando");
+  }
+
+  /** Frase terminada: se responde con ella, se pasa («no sé») o, si no se entiende, se sigue escuchando. */
+  function entendido(alternativas) {
+    const q = ronda.preguntas[ronda.i];
+    if (esNoSe(alternativas)) { registrar({ ok: false, voz: true }, "", true); return; }
+    if (modoActual() === "opciones") {
+      const nombres = (o) => (q.dir === "pc" ? [o.capital, ...o.capitalAlt] : [o.pais, ...o.paisAlt]);
+      const i = opcionDicha(alternativas, q.opciones, nombres);
+      const boton = i >= 0 ? $("#opciones4").children[i] : null;
+      if (boton && !boton.disabled) { responderOpcion(q.opciones[i]); return; }
+      voz.nota = { texto: `No te entiendo: «${alternativas[0].trim()}»`, hasta: performance.now() + 2500 };
+      pintarMicro();
+      setTimeout(pintarMicro, 2600);
+      return;
+    }
+    const res = evaluarVoz(alternativas, q);
+    const e = $("#entrada");
+    if (res.vacia) { e.value = ""; e.classList.remove("dictando"); return; } // solo muletillas: se sigue escuchando
+    e.value = res.texto;
+    registrar({ ...res, voz: true }, res.texto);
+  }
+
+  /** El botón del micrófono, bajo la instrucción: «Escucha…», «Te escucho» o «Toca para hablar». */
+  function pintarMicro() {
+    const b = $("#btn-micro");
+    const visible = vozActiva() && esperandoRespuesta();
+    b.hidden = !visible;
+    if (!visible) return;
+    b.dataset.estado = voz.estado;
+    const nota = voz.nota && voz.nota.hasta > performance.now() ? voz.nota.texto : "";
+    const textos = { leyendo: "Escucha…", escuchando: "Te escucho", parado: "Toca para hablar" };
+    $("#micro-texto").textContent = nota || textos[voz.estado];
+    b.setAttribute("aria-label", voz.estado === "escuchando" ? "Te escucho. Toca para parar el micrófono" : textos[voz.estado]);
+  }
+  $("#btn-micro").addEventListener("click", () => {
+    if (!esperandoRespuesta()) return;
+    if (voz.estado === "leyendo") { try { speechSynthesis.cancel(); } catch { /* nada */ } return; } // deja de leer y escucha ya
+    if (voz.estado === "escuchando") { pausarVoz(); return; }
+    voz.pausado = false;
+    voz.reintentos = 0;
+    voz.nota = null;
+    escuchar();
+  });
+  // Si te pones a escribir, el micrófono se para en esta pregunta.
+  $("#entrada").addEventListener("input", () => {
+    $("#entrada").classList.remove("dictando");
+    if (voz.estado !== "parado") pausarVoz();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!vozActiva()) return;
+    if (document.hidden) pararReconocimiento();
+    else if (esperandoRespuesta() && !voz.pausado && voz.estado !== "leyendo") escuchar();
+  });
+
+  function ponerPlaceholder(q) {
+    const esPais = q.dir === "pc";
+    const verbo = vozActiva() ? "Di o escribe" : "Escribe";
+    $("#entrada").placeholder = `${verbo} ${esPais ? "la capital" : "el país"}…`;
+  }
+
+  /* Interruptores de la partida: «Hablar» y «Manos libres» (pasar sola a la siguiente), en cualquier momento */
+  function pintarConmutadores() {
+    $("#conm-voz").hidden = !vozDisponible;
+    $("#chk-voz-juego").checked = vozActiva();
+    $("#chk-auto-juego").checked = ajustes.auto;
+  }
+  $("#chk-voz-juego").addEventListener("change", (e) => {
+    ajustes.voz = e.target.checked;
+    almacen.guardar("capitales.ajustes", ajustes);
+    $("#chk-voz").checked = ajustes.voz;
+    if (ronda && ronda.i >= 0 && ronda.preguntas[ronda.i]) ponerPlaceholder(ronda.preguntas[ronda.i]);
+    if (ajustes.voz) { voz.pausado = false; voz.reintentos = 0; if (esperandoRespuesta()) escuchar(); }
+    else callarVoz();
+    pintarMicro();
+  });
+  $("#chk-auto-juego").addEventListener("change", (e) => {
+    ajustes.auto = e.target.checked;
+    almacen.guardar("capitales.ajustes", ajustes);
+    $("#chk-auto").checked = ajustes.auto;
+    if (!ronda || !ronda.respondida || $("#pantalla-juego").hidden) return;
+    // Viendo la respuesta: al marcarlo empieza la cuenta atrás; al desmarcarlo hay que pulsar «Siguiente».
+    if (ajustes.auto) programarSiguiente(ronda.pausa || PAUSA_ACIERTO);
+    else { clearTimeout(temporizadorSiguiente); temporizadorSiguiente = 0; $("#cuenta-atras").classList.remove("activa"); }
   });
 
   /* ------------------------------------------------------------------
@@ -1610,6 +1925,7 @@
   $("#btn-marca").addEventListener("click", irAInicio);
   $("#nav-jugar").addEventListener("click", irAInicio);
   function detenerRonda() {
+    callarVoz();
     clearInterval(temporizadorReloj);
     clearInterval(temporizadorCrono);
     clearTimeout(temporizadorSiguiente);
