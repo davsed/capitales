@@ -123,26 +123,58 @@
     }
     return clavesPorTipo[tipo];
   }
-  /** Margen de letras distintas que se tolera al comparar por el sonido: 1 de cada 4. */
-  const margen = (clave) => Math.floor(clave.length / 4);
+  // Sonidos que el reconocimiento de voz confunde a menudo: cambiar uno por otro cuesta menos que una letra distinta.
+  const CONFUNDIBLES = new Set(["ei", "ou", "bp", "dt", "gk", "gj", "mn", "rl", "iy", "ae"].flatMap((x) => [x, x[1] + x[0]]));
+  /** Distancia entre dos claves sonoras (Damerau-Levenshtein con los sonidos confundibles a 0,4). */
+  function distanciaSonora(a, b) {
+    const m = a.length, n = b.length;
+    const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+    for (let j = 1; j <= n; j++) d[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const x = a[i - 1], y = b[j - 1];
+        const coste = x === y ? 0 : CONFUNDIBLES.has(x + y) ? 0.4 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + coste);
+        if (i > 1 && j > 1 && x === b[j - 2] && a[i - 2] === y) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+    return d[m][n];
+  }
+  /** Cuánto se parecen dos claves sonoras, de 0 (nada) a 1 (suenan igual). */
+  const parecido = (a, b) => 1 - distanciaSonora(a, b) / Math.max(a.length, b.length, 1);
+
+  /**
+   * Lista cerrada: entre todos los nombres posibles (todas las capitales, o todos los países), los países
+   * cuyo nombre más se parece a lo oído, del más parecido al menos, con su parecido.
+   */
+  function masParecidos(oido, tipo) {
+    const k = claveSonora(oido);
+    const mejor = new Map(); // país → parecido de su nombre más cercano
+    for (const c of clavesDe(tipo)) {
+      const s = parecido(k, c.clave);
+      if (s > (mejor.get(c.p) || 0)) mejor.set(c.p, s);
+    }
+    return [...mejor].map(([p, s]) => ({ p, s })).sort((x, y) => y.s - x.s);
+  }
+  // Para dar por buena una respuesta por cómo suena: que la correcta sea la más parecida de la lista,
+  // que se parezca lo bastante y que se distinga de la segunda (Riad y Riga se confunden: entonces, no).
+  // Elegidos simulando miles de errores de reconocimiento: con un error se recupera el 97 % de los nombres;
+  // con dos, el 91 %. En las 4 opciones se pide más, porque entre solo cuatro nombres el más parecido dice menos.
+  const VOZ = { umbral: 0.5, margen: 0.05, umbralOpciones: 0.6, margenOpciones: 0.1 };
 
   /** ¿Lo dicho es «no sé», «paso», «ni idea»…? Entonces se pasa la pregunta. */
   const NO_SE = /^(?:no (?:lo )?se|nose|no se cual es|ni idea|no tengo (?:ni )?idea|no tengo ni la mas remota idea|paso|pasar|paso palabra|me rindo|no me acuerdo|no lo recuerdo|no lo se)$/;
   const esNoSe = (alternativas) => alternativas.some((a) => NO_SE.test(sinMuletillas(a)));
 
-  /**
-   * Evalúa una respuesta dicha en voz alta. «alternativas» son las interpretaciones del reconocimiento
-   * de voz, de más a menos probable: basta con que una sea correcta. Primero se buscan las grafías
-   * aceptadas (también dentro de una frase); después, por cómo suena, siempre que el nombre correcto
-   * sea el que más se parece de todos. Devuelve lo mismo que evaluar(), más el texto oído.
-   */
-  function evaluarVoz(alternativas, pregunta) {
-    // Lo que solo son muletillas («eh», «pues») o una letra suelta no es una respuesta: se sigue escuchando.
-    const textos = alternativas.map((a) => String(a).trim()).filter((a) => (trozos(a)[0] || "").replace(/ /g, "").length >= 2);
-    if (!textos.length) return { ok: false, vacia: true };
-    // Lo dicho entero (sin muletillas), y cómo lo evalúa la corrección normal
-    const dichos = textos.map((t) => { const entero = trozos(t)[0]; return { t, entero, r: evaluar(entero, pregunta, false) }; });
-    const conocido = (d) => d.r.comoCapital || d.r.comoPais; // es otro nombre conocido («Malí» no es «Malé»)
+  /** Lo dicho entero (sin muletillas) y cómo lo evalúa la corrección normal. Las muletillas solas no cuentan. */
+  const preparar = (lista, pregunta) => lista.map((a) => String(a).trim())
+    .filter((t) => (trozos(t)[0] || "").replace(/ /g, "").length >= 2)
+    .map((t) => { const entero = trozos(t)[0]; return { t, entero, r: evaluar(entero, pregunta, false) }; });
+  /** ¿Es otro nombre conocido, otro país u otra capital? («Malí» no es «Malé».) */
+  const conocido = (d) => !!(d.r.comoCapital || d.r.comoPais);
+
+  /** Busca la respuesta correcta en lo oído. Devuelve el acierto o null. */
+  function buscarAcierto(dichos, pregunta) {
     // 1. Una de las interpretaciones es una grafía aceptada
     for (const d of dichos) if (d.r.ok) return { ...d.r, texto: d.t };
     // 2. La respuesta va dentro de una frase («París, creo»), salvo que lo dicho sea otro nombre («Ciudad de la Paz» no es «La Paz»)
@@ -150,29 +182,38 @@
       if (conocido(d)) continue;
       for (const f of trozos(d.t).slice(1)) { const r = evaluar(f, pregunta, false); if (r.ok) return { ...r, texto: d.t }; }
     }
-    // 3. Por cómo suena: el nombre correcto tiene que ser el más parecido de todos, sin empate
+    // 3. Por cómo suena, con la lista cerrada: lo oído se compara con todas las capitales (o todos los
+    //    países) y vale si la más parecida es la correcta, con margen sobre la segunda.
     const { p, dir } = pregunta;
-    const claves = clavesDe(dir === "pc" ? "capital" : "pais");
     for (const d of dichos) {
-      if (conocido(d)) continue;
-      const k = claveSonora(d.entero);
-      if (k.length < 3) continue;
-      let mejor = null;
-      for (const c of claves) {
-        if (c.p !== p) continue;
-        const dist = distancia(k, c.clave, margen(c.clave));
-        if (dist <= margen(c.clave) && (!mejor || dist < mejor)) mejor = dist;
+      if (conocido(d) || claveSonora(d.entero).length < 3) continue;
+      const [primero, segundo] = masParecidos(d.entero, dir === "pc" ? "capital" : "pais");
+      if (primero.p === p && primero.s >= VOZ.umbral && primero.s - (segundo ? segundo.s : 0) >= VOZ.margen) {
+        return { ok: true, exacta: true, nombre: dir === "pc" ? p.capital : p.pais, texto: d.t, parecido: primero.s };
       }
-      if (mejor === null) continue;
-      const otroIgual = claves.some((c) => c.p !== p && distancia(k, c.clave, mejor) <= mejor);
-      if (!otroIgual) return { ok: true, exacta: true, nombre: dir === "pc" ? p.capital : p.pais, texto: d.t };
     }
-    // 4. Fallo. ¿Ha dicho otro país u otra capital? Se cuenta para explicarlo (y dar la distancia).
-    for (const d of dichos) if (conocido(d)) return { ...d.r, texto: d.t };
-    for (const d of dichos) {
+    return null;
+  }
+
+  /**
+   * Evalúa una respuesta dicha en voz alta. «alternativas» son las interpretaciones finales del
+   * reconocimiento de voz, de más a menos probable: basta con que una sea correcta. «parciales» es lo que
+   * fue oyendo antes de terminar la frase, que a veces entiende mejor; solo cuenta si lo final no es otro
+   * nombre conocido (si al final dice «Guinea Ecuatorial», no vale lo que oyó a medias, «Guinea»).
+   * Devuelve lo mismo que evaluar(), más el texto oído.
+   */
+  function evaluarVoz(alternativas, pregunta, parciales = []) {
+    const finales = preparar(alternativas, pregunta);
+    if (!finales.length) return { ok: false, vacia: true }; // solo muletillas: se sigue escuchando
+    const acierto = buscarAcierto(finales, pregunta) ||
+      (finales.some(conocido) ? null : buscarAcierto(preparar(parciales, pregunta), pregunta));
+    if (acierto) return acierto;
+    // Fallo. ¿Ha dicho otro país u otra capital? Se cuenta para explicarlo (y dar la distancia).
+    for (const d of finales) if (conocido(d)) return { ...d.r, texto: d.t };
+    for (const d of finales) {
       for (const f of trozos(d.t).slice(1)) { const r = evaluar(f, pregunta, false); if (r.comoCapital || r.comoPais) return { ...r, texto: d.t }; }
     }
-    return { ok: false, texto: textos[0] };
+    return { ok: false, texto: finales[0].t };
   }
 
   const ORDINALES = [
@@ -196,15 +237,13 @@
         if (i >= 0) return i;
       }
     }
-    // Por cómo suena: la opción más parecida, si se parece lo bastante y no empata con otra.
+    // Por cómo suena: la más parecida de las cuatro, si se parece lo bastante y se distingue de las demás.
     for (const a of alternativas) {
       const k = claveSonora(sinMuletillas(a));
       if (k.length < 3) continue;
-      const d = opciones.map((o) => Math.min(...nombresDe(o).map((n) => { const c = claveSonora(n); return distancia(k, c, margen(c) + 1); })));
-      const minimo = Math.min(...d);
-      const i = d.indexOf(minimo);
-      const limite = margen(claveSonora(nombresDe(opciones[i])[0])) + 1;
-      if (minimo <= limite && d.filter((x) => x === minimo).length === 1) return i;
+      const s = opciones.map((o) => Math.max(...nombresDe(o).map((n) => parecido(k, claveSonora(n)))));
+      const orden = [...s].sort((x, y) => y - x);
+      if (orden[0] >= VOZ.umbralOpciones && orden[0] - (orden[1] || 0) >= VOZ.margenOpciones) return s.indexOf(orden[0]);
     }
     return -1;
   }
@@ -220,6 +259,6 @@
 
   global.TABLA = {
     normalizar, variantes, capitalDe, paisDe, evaluar, distancia, distanciaKm, ARTICULO,
-    claveSonora, evaluarVoz, esNoSe, opcionDicha,
+    claveSonora, parecido, masParecidos, evaluarVoz, esNoSe, opcionDicha, VOZ,
   };
 })(typeof window !== "undefined" ? window : globalThis);

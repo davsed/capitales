@@ -586,6 +586,7 @@
     $("#chk-auto").checked = ajustes.auto;
     $("#chk-voz").checked = ajustes.voz;
     $("#ajuste-voz").hidden = !vozDisponible;
+    pintarVozLocal();
     $("#aviso-voz").hidden = !vozDisponible;
     $("#chk-taiwan").checked = ajustes.taiwan;
     $("#chk-erratas").disabled = ajustes.modo === "opciones";
@@ -1420,7 +1421,16 @@
     rec.interimResults = true;
     rec.maxAlternatives = 5;
     rec.continuous = false;
+    // En el ordenador, si está el español descargado: con la lista de capitales o países como ayuda
+    const local = usarVozLocal();
+    if (local) {
+      try { rec.processLocally = true; } catch { /* nada */ }
+      if (!vozLocal.sinFrases && window.SpeechRecognitionPhrase && "phrases" in rec) {
+        try { rec.phrases = frasesPara(ronda.preguntas[ronda.i]).map(frase); } catch { vozLocal.sinFrases = true; }
+      }
+    }
     const inicio = performance.now();
+    const oidos = []; // lo que va oyendo antes de terminar la frase: a veces lo entiende mejor a medias
     rec.onstart = () => {
       if (voz.rec !== rec) return;
       voz.estado = "escuchando";
@@ -1429,9 +1439,10 @@
     rec.onresult = (e) => {
       if (voz.rec !== rec || turno !== voz.turno || !esperandoRespuesta()) return;
       const resultado = e.results[e.results.length - 1];
-      const alternativas = Array.from({ length: resultado.length }, (_, i) => resultado[i].transcript);
-      if (resultado.isFinal) entendido(alternativas);
-      else oyendo(alternativas[0]);
+      const alternativas = Array.from({ length: resultado.length }, (_, i) => resultado[i].transcript.trim()).filter(Boolean);
+      if (resultado.isFinal) { entendido(alternativas, oidos.slice(-6).reverse()); return; }
+      for (const a of alternativas) if (!oidos.includes(a)) oidos.push(a);
+      if (alternativas.length) oyendo(alternativas[0]);
     };
     rec.onerror = (e) => {
       if (voz.rec !== rec) return;
@@ -1439,6 +1450,10 @@
         apagarVoz("No hay permiso para usar el micrófono. Puedes darlo desde el candado de la barra de direcciones y volver a activar «Hablar».");
       } else if (e.error === "audio-capture") {
         apagarVoz("No se encuentra ningún micrófono. Conecta uno y vuelve a activar «Hablar».");
+      } else if (e.error === "phrases-not-supported") {
+        vozLocal.sinFrases = true; // sigue sin la lista de ayuda
+      } else if (local && (e.error === "language-not-supported" || e.error === "service-not-allowed")) {
+        vozLocal.fallo = true; // el reconocimiento en el ordenador no funciona: se vuelve al de siempre
       } else if (e.error === "language-not-supported") {
         apagarVoz("Este navegador no reconoce el español hablado.");
       } else if (e.error === "network") {
@@ -1472,21 +1487,26 @@
     e.classList.add("dictando");
   }
 
-  /** Frase terminada: se responde con ella, se pasa («no sé») o, si no se entiende, se sigue escuchando. */
-  function entendido(alternativas) {
+  /**
+   * Frase terminada: se responde con ella, se pasa («no sé») o, si no se entiende, se sigue escuchando.
+   * «parciales» es lo que fue oyendo antes de terminarla, por si a medias lo entendió mejor.
+   */
+  function entendido(alternativas, parciales = []) {
     const q = ronda.preguntas[ronda.i];
     if (esNoSe(alternativas)) { registrar({ ok: false, voz: true }, "", true); return; }
     if (modoActual() === "opciones") {
       const nombres = (o) => (q.dir === "pc" ? [o.capital, ...o.capitalAlt] : [o.pais, ...o.paisAlt]);
-      const i = opcionDicha(alternativas, q.opciones, nombres);
+      let i = opcionDicha(alternativas, q.opciones, nombres);
+      if (i < 0 && parciales.length) i = opcionDicha(parciales, q.opciones, nombres);
       const boton = i >= 0 ? $("#opciones4").children[i] : null;
       if (boton && !boton.disabled) { responderOpcion(q.opciones[i]); return; }
-      voz.nota = { texto: `No te entiendo: «${alternativas[0].trim()}»`, hasta: performance.now() + 2500 };
+      if (!alternativas.length) return;
+      voz.nota = { texto: `No te entiendo: «${alternativas[0]}»`, hasta: performance.now() + 2500 };
       pintarMicro();
       setTimeout(pintarMicro, 2600);
       return;
     }
-    const res = evaluarVoz(alternativas, q);
+    const res = evaluarVoz(alternativas, q, parciales);
     const e = $("#entrada");
     if (res.vacia) { e.value = ""; e.classList.remove("dictando"); return; } // solo muletillas: se sigue escuchando
     e.value = res.texto;
@@ -1525,6 +1545,64 @@
     else if (esperandoRespuesta() && !voz.pausado && voz.estado !== "leyendo") escuchar();
   });
 
+  /* Reconocimiento en el propio ordenador (Chrome 139 o posterior, en Windows, Mac y Linux). Con él se le
+     puede dar al reconocedor la lista de capitales o países que pueden salir («contextual biasing»), y así
+     entiende mejor los nombres raros; además, la voz no sale del ordenador. Hay que descargar el español
+     una vez (SpeechRecognition.install). Si algo falla, se vuelve al reconocimiento de siempre. */
+  const vozLocal = {
+    estado: "no",      // no | unavailable | downloadable | downloading | available
+    sinFrases: false,  // el navegador no admite la lista de ayuda
+    fallo: false,      // el reconocimiento local ha fallado en esta visita: se usa el de siempre
+    avisado: false,    // ya se ha dicho dónde descargarlo
+  };
+  const OPCIONES_LOCAL = { langs: ["es-ES"], processLocally: true };
+  const usarVozLocal = () => vozLocal.estado === "available" && !vozLocal.fallo;
+  /** Lo que puede responderse a esta pregunta: las capitales (o los países), o las cuatro opciones. */
+  function frasesPara(q) {
+    const nombre = (x) => (q.dir === "pc" ? x.capital : x.pais);
+    const lista = modoActual() === "opciones" && q.opciones
+      ? [...q.opciones.map(nombre), "uno", "dos", "tres", "cuatro"]
+      : paisesDisponibles().map(nombre);
+    return [...new Set([...lista, "no sé", "paso"])];
+  }
+  /** Una frase de la lista de ayuda, con refuerzo (si el navegador no admite ese refuerzo, con el normal). */
+  function frase(texto) {
+    try { return new SpeechRecognitionPhrase(texto, 5); } catch { return new SpeechRecognitionPhrase(texto); }
+  }
+  async function comprobarVozLocal() {
+    if (vozDisponible && typeof Reconocimiento.available === "function") {
+      try { vozLocal.estado = await Reconocimiento.available(OPCIONES_LOCAL); } catch { vozLocal.estado = "no"; }
+    }
+    pintarVozLocal();
+  }
+  async function instalarVozLocal() {
+    vozLocal.estado = "downloading";
+    pintarVozLocal();
+    let instalado = false;
+    try { instalado = await Reconocimiento.install(OPCIONES_LOCAL); } catch { instalado = false; }
+    if (instalado) vozLocal.fallo = false;
+    await comprobarVozLocal();
+    if (!instalado && vozLocal.estado !== "available") {
+      avisar("No se ha podido descargar el español. Se sigue usando el reconocimiento de siempre.");
+    }
+  }
+  function pintarVozLocal() {
+    const caja = $("#voz-local");
+    caja.hidden = !vozDisponible || !ajustes.voz || !["downloadable", "downloading", "available"].includes(vozLocal.estado);
+    if (caja.hidden) return;
+    const textos = {
+      downloadable: "Tu navegador puede reconocer la voz en el propio ordenador, con la lista de capitales y países " +
+        "como ayuda: entiende mejor los nombres raros y tu voz no sale del ordenador. Hay que descargar el español una vez.",
+      downloading: "Descargando el español… Mientras tanto se usa el reconocimiento de siempre.",
+      available: "✓ La voz se reconoce en tu ordenador, con la lista de capitales y países como ayuda.",
+    };
+    $("#voz-local-texto").textContent = textos[vozLocal.estado];
+    caja.classList.toggle("lista", vozLocal.estado === "available");
+    $("#btn-voz-local").hidden = vozLocal.estado !== "downloadable";
+  }
+  $("#btn-voz-local").addEventListener("click", instalarVozLocal);
+  comprobarVozLocal();
+
   function ponerPlaceholder(q) {
     const esPais = q.dir === "pc";
     const verbo = vozActiva() ? "Di o escribe" : "Escribe";
@@ -1541,9 +1619,17 @@
     ajustes.voz = e.target.checked;
     almacen.guardar("capitales.ajustes", ajustes);
     $("#chk-voz").checked = ajustes.voz;
+    pintarVozLocal();
     if (ronda && ronda.i >= 0 && ronda.preguntas[ronda.i]) ponerPlaceholder(ronda.preguntas[ronda.i]);
-    if (ajustes.voz) { voz.pausado = false; voz.reintentos = 0; if (esperandoRespuesta()) escuchar(); }
-    else callarVoz();
+    if (ajustes.voz) {
+      voz.pausado = false;
+      voz.reintentos = 0;
+      if (esperandoRespuesta()) escuchar();
+      if (vozLocal.estado === "downloadable" && !vozLocal.avisado) {
+        vozLocal.avisado = true;
+        avisar("Consejo: en «Más opciones» puedes descargar el español para que la voz se reconozca en tu ordenador y entienda mejor los nombres de capitales y países.");
+      }
+    } else callarVoz();
     pintarMicro();
   });
   $("#chk-auto-juego").addEventListener("change", (e) => {

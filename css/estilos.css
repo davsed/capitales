@@ -248,6 +248,10 @@ a.nav-btn { color: var(--tinta-suave); }
   border-top: 1px dashed var(--linea); font-weight: 500;
 }
 .ajuste small { display: block; font-weight: 400; font-size: 13px; color: var(--tinta-suave); }
+.voz-local { display: grid; gap: 8px; justify-items: start; padding: 0 0 10px; font-size: 13px; color: var(--tinta-suave); }
+.voz-local p { margin: 0; max-width: 60ch; }
+.voz-local.lista p { color: var(--ok); font-weight: 600; }
+.voz-local .btn-secundario { padding: 7px 12px; font-size: 14px; }
 .ajuste select { padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--linea); background: var(--superficie); }
 .interruptor input {
   appearance: none; flex: none; width: 46px; height: 28px; border-radius: 999px; background: var(--linea); position: relative;

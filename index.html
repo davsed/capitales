@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="css/estilos.css?v=1cebac21ae">
+<link rel="stylesheet" href="css/estilos.css?v=d3e839b69d">
 </head>
 <body>
 <!--CONTENIDO-->
@@ -143,6 +143,10 @@
               <span>Responder hablando<small>El juego dice la pregunta y escucha tu respuesta. Di «no sé» para pasar</small></span>
               <input type="checkbox" id="chk-voz" name="voz">
             </label>
+            <div class="voz-local" id="voz-local" hidden>
+              <p id="voz-local-texto"></p>
+              <button type="button" class="btn-secundario" id="btn-voz-local" hidden>Descargar el español</button>
+            </div>
             <label class="ajuste" for="sel-tiempo">
               <span>Tiempo por pregunta</span>
               <select id="sel-tiempo" name="tiempo">
@@ -452,10 +456,10 @@
 <!--/CONTENIDO-->
 <script src="js/datos.js?v=e489fb3244"></script>
 <script src="js/mapa.js?v=9dc4cd9d85"></script>
-<script src="js/tabla.js?v=b3cf9d8664"></script>
+<script src="js/tabla.js?v=0fa0dc45bb"></script>
 <script src="js/progreso.js?v=76d7fa1dcf"></script>
 <script src="js/muro-config.js?v=5a2468ccc4"></script>
 <script src="js/muro.js?v=6fc4b239dc"></script>
-<script src="js/juego.js?v=8a320f5574"></script>
+<script src="js/juego.js?v=f94df4a739"></script>
 </body>
 </html>

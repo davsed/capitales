@@ -24,6 +24,27 @@ test("acepta la respuesta aunque el reconocimiento la escriba a su manera", () =
   assert.ok(oido("KZ", "cp", "Kazajstan").ok);
 });
 
+test("con la lista cerrada vale lo que más se parece a la respuesta, aunque se oiga mal", () => {
+  // El reconocimiento parte palabras, cambia vocales y letras que suenan parecido o se come una sílaba
+  const casos = [
+    ["SZ", "Babane"], ["BF", "agua dugu"], ["KG", "bis quec"], ["TJ", "tu sambé"], ["AM", "e reban"],
+    ["OM", "mas cate"], ["NE", "nia mei"], ["TO", "nuku alofa"], ["SB", "oniara"], ["LA", "bien tian"],
+    ["KH", "nom pen"], ["MN", "ulam bator"], ["GH", "acra"], ["MW", "lilongue"], ["LS", "masero"],
+  ];
+  for (const [id, dicho] of casos) assert.ok(oido(id, "pc", dicho).ok, `${pais(id).capital}: «${dicho}»`);
+  // Pero no si se parece igual a otra: Riad y Riga
+  assert.ok(!oido("SA", "pc", "ría").ok);
+  assert.ok(!oido("LV", "pc", "ría").ok);
+});
+
+test("lo oído a medias ayuda, salvo que al final se diga otro nombre", () => {
+  const q = { p: pais("ES"), dir: "pc" };
+  assert.ok(T.evaluarVoz(["mal di"], q, ["Madrid"]).ok); // a medias lo entendió bien
+  const guinea = { p: pais("GN"), dir: "cp" };
+  assert.ok(!T.evaluarVoz(["Guinea Ecuatorial"], guinea, ["Guinea"]).ok); // al final dijo otro país
+  assert.ok(T.evaluarVoz(["Guinea"], guinea, ["Guinea Ecu"]).ok);
+});
+
 test("encuentra la respuesta dentro de una frase y entre varias interpretaciones", () => {
   assert.ok(oido("FR", "pc", "la capital es París").ok);
   assert.ok(oido("FR", "pc", "pues creo que es parís").ok);
