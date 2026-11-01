@@ -248,6 +248,8 @@ a.nav-btn { color: var(--tinta-suave); }
   border-top: 1px dashed var(--linea); font-weight: 500;
 }
 .ajuste small { display: block; font-weight: 400; font-size: 13px; color: var(--tinta-suave); }
+.voz-portada { display: block; margin-top: 4px; }
+.enlace { padding: 0; border: 0; background: none; color: var(--tinta); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .voz-local { display: grid; gap: 8px; justify-items: start; padding: 0 0 10px; font-size: 13px; color: var(--tinta-suave); }
 .voz-local p { margin: 0; max-width: 60ch; }
 .voz-local.lista p { color: var(--ok); font-weight: 600; }

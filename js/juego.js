@@ -744,6 +744,10 @@
     temporizadorCrono = setInterval(() => { if (ronda) $("#hud-tiempo").textContent = formatoTiempo(tiempoJugado(ronda)); }, 250);
     $("#hud-tiempo").textContent = "0:00";
     pintarConmutadores();
+    if (vozActiva() && vozLocal.estado === "downloadable" && !vozLocal.avisado) {
+      vozLocal.avisado = true;
+      avisar("Consejo: en la portada o en «Más opciones» puedes descargar el español para que la voz se reconozca en tu ordenador y entienda mejor los nombres de capitales y países.");
+    }
   }
 
   /* ------------------------------------------------------------------
@@ -1407,15 +1411,19 @@
         voz.error = "red";
         avisar("Sin conexión no se puede reconocer la voz: escribe la respuesta o toca el micrófono para probar otra vez.");
       }
+      // Tras algunos errores Chrome no cierra la sesión (por ejemplo, si el español local no está): se da por cerrada
+      setTimeout(terminada, 300);
     };
-    rec.onend = () => {
-      if (voz.rec !== rec) return; // cerrado a propósito
+    const terminada = () => {
+      if (voz.rec !== rec) return; // cerrada a propósito, o ya tratada
       voz.rec = null;
+      try { rec.abort(); } catch { /* ya estaba cerrada */ }
       micNoCapta(true);
       voz.cortes = performance.now() - inicio < 1500 ? voz.cortes + 1 : 0;
       if (voz.error || voz.cortes > 3) { pintarMicro(); return; }
-      setTimeout(abrirMicro, 30); // se vuelve a abrir enseguida
+      setTimeout(abrirMicro, 30); // se vuelve a abrir enseguida (sin lo que ha fallado)
     };
+    rec.onend = terminada;
     try { rec.start(); } catch { voz.rec = null; }
     pintarMicro();
   }
@@ -1688,6 +1696,7 @@
   }
   /** Qué reconocimiento se usa, y la descarga del español si el navegador la permite (en «Más opciones»). */
   function pintarVozLocal() {
+    $("#voz-portada").hidden = !vozDisponible || vozLocal.estado !== "downloadable" || vozLocal.fallo;
     const caja = $("#voz-local");
     caja.hidden = !vozDisponible || !ajustes.voz;
     if (caja.hidden) return;
@@ -1707,6 +1716,10 @@
     $("#btn-voz-local").hidden = e !== "downloadable";
   }
   $("#btn-voz-local").addEventListener("click", instalarVozLocal);
+  $("#btn-voz-local-portada").addEventListener("click", () => {
+    instalarVozLocal();
+    avisar("Descargando el español para reconocer la voz en tu ordenador. Mientras tanto se usa el reconocimiento por internet.");
+  });
   comprobarVozLocal();
 
   function ponerPlaceholder(q) {
