@@ -124,7 +124,7 @@
     return clavesPorTipo[tipo];
   }
   // Sonidos que el reconocimiento de voz confunde a menudo: cambiar uno por otro cuesta menos que una letra distinta.
-  const CONFUNDIBLES = new Set(["ei", "ou", "bp", "dt", "gk", "gj", "mn", "rl", "iy", "ae"].flatMap((x) => [x, x[1] + x[0]]));
+  const CONFUNDIBLES = new Set(["ei", "ou", "bp", "dt", "gk", "gj", "mn", "iy"].flatMap((x) => [x, x[1] + x[0]]));
   /** Distancia entre dos claves sonoras (Damerau-Levenshtein con los sonidos confundibles a 0,4). */
   function distanciaSonora(a, b) {
     const m = a.length, n = b.length;
@@ -158,9 +158,12 @@
   }
   // Para dar por buena una respuesta por cómo suena: que la correcta sea la más parecida de la lista,
   // que se parezca lo bastante y que se distinga de la segunda (Riad y Riga se confunden: entonces, no).
-  // Elegidos simulando miles de errores de reconocimiento: con un error se recupera el 97 % de los nombres;
-  // con dos, el 91 %. En las 4 opciones se pide más, porque entre solo cuatro nombres el más parecido dice menos.
-  const VOZ = { umbral: 0.5, margen: 0.05, umbralOpciones: 0.6, margenOpciones: 0.1 };
+  // Elegidos simulando miles de errores de reconocimiento, sin aceptar lo que solo se parece «un poco»:
+  // con un error en el nombre se acepta el 96 %; con dos, el 84 %. Lo que no se parece claramente a nada
+  // no es ni acierto ni fallo: se sigue escuchando. Lo oído a medias solo vale si no hay ninguna duda.
+  // Dos nombres que suenan casi igual (Kingston y Kingstown, Malí y Malé) no se pueden distinguir de oído:
+  // si se oye el otro, vale. En las 4 opciones se pide más, porque entre cuatro nombres el más parecido dice menos.
+  const VOZ = { umbral: 0.7, margen: 0.08, temprano: 0.85, otro: 0.8, homofono: 0.88, umbralOpciones: 0.6, margenOpciones: 0.1 };
 
   /** ¿Lo dicho es «no sé», «paso», «ni idea»…? Entonces se pasa la pregunta. */
   const NO_SE = /^(?:no (?:lo )?se|nose|no se cual es|ni idea|no tengo (?:ni )?idea|no tengo ni la mas remota idea|paso|pasar|paso palabra|me rindo|no me acuerdo|no lo recuerdo|no lo se)$/;
@@ -173,47 +176,74 @@
   /** ¿Es otro nombre conocido, otro país u otra capital? («Malí» no es «Malé».) */
   const conocido = (d) => !!(d.r.comoCapital || d.r.comoPais);
 
-  /** Busca la respuesta correcta en lo oído. Devuelve el acierto o null. */
-  function buscarAcierto(dichos, pregunta) {
-    // 1. Una de las interpretaciones es una grafía aceptada
-    for (const d of dichos) if (d.r.ok) return { ...d.r, texto: d.t };
-    // 2. La respuesta va dentro de una frase («París, creo»), salvo que lo dicho sea otro nombre («Ciudad de la Paz» no es «La Paz»)
-    for (const d of dichos) {
-      if (conocido(d)) continue;
-      for (const f of trozos(d.t).slice(1)) { const r = evaluar(f, pregunta, false); if (r.ok) return { ...r, texto: d.t }; }
-    }
-    // 3. Por cómo suena, con la lista cerrada: lo oído se compara con todas las capitales (o todos los
-    //    países) y vale si la más parecida es la correcta, con margen sobre la segunda.
-    const { p, dir } = pregunta;
-    for (const d of dichos) {
-      if (conocido(d) || claveSonora(d.entero).length < 3) continue;
-      const [primero, segundo] = masParecidos(d.entero, dir === "pc" ? "capital" : "pais");
-      if (primero.p === p && primero.s >= VOZ.umbral && primero.s - (segundo ? segundo.s : 0) >= VOZ.margen) {
-        return { ok: true, exacta: true, nombre: dir === "pc" ? p.capital : p.pais, texto: d.t, parecido: primero.s };
+  // Nombres que son el principio de otro de la misma lista («Guinea» → «Guinea Ecuatorial», «Sudán» → «Sudán
+  // del Sur»): oídos a medias no valen todavía, porque la frase puede seguir.
+  let prefijos = null;
+  function esPrincipioDeOtro(p, tipo) {
+    if (!prefijos) {
+      prefijos = { capital: new Set(), pais: new Set() };
+      for (const t of ["capital", "pais"]) {
+        const nombres = clavesDe(t).map((c) => ({ p: c.p, n: normalizar(c.nombre).replace(ARTICULO, "") }));
+        for (const a of nombres) if (nombres.some((b) => b.p !== a.p && b.n.startsWith(a.n + " "))) prefijos[t].add(a.p);
       }
     }
-    return null;
+    return prefijos[tipo].has(p);
   }
 
   /**
-   * Evalúa una respuesta dicha en voz alta. «alternativas» son las interpretaciones finales del
-   * reconocimiento de voz, de más a menos probable: basta con que una sea correcta. «parciales» es lo que
-   * fue oyendo antes de terminar la frase, que a veces entiende mejor; solo cuenta si lo final no es otro
-   * nombre conocido (si al final dice «Guinea Ecuatorial», no vale lo que oyó a medias, «Guinea»).
-   * Devuelve lo mismo que evaluar(), más el texto oído.
+   * Juzga lo oído para una pregunta. «alternativas»: las interpretaciones del reconocimiento de voz, de más
+   * a menos probable (basta con que una sea correcta). Devuelve:
+   *   { ok: true, nombre, texto }        acierto («nombre»: cómo se escribe bien)
+   *   { ok: false, comoCapital | comoPais, texto }   ha dicho otro nombre de la lista: fallo
+   *   { dudoso: true, texto }            no se parece claramente a ningún nombre: se sigue escuchando
+   *   { vacia: true }                    solo muletillas («eh», «pues»)
+   * Con «temprano» (lo oído aún a medias) solo da un acierto si es inequívoco; si no, { espera: true }.
    */
-  function evaluarVoz(alternativas, pregunta, parciales = []) {
-    const finales = preparar(alternativas, pregunta);
-    if (!finales.length) return { ok: false, vacia: true }; // solo muletillas: se sigue escuchando
-    const acierto = buscarAcierto(finales, pregunta) ||
-      (finales.some(conocido) ? null : buscarAcierto(preparar(parciales, pregunta), pregunta));
-    if (acierto) return acierto;
-    // Fallo. ¿Ha dicho otro país u otra capital? Se cuenta para explicarlo (y dar la distancia).
-    for (const d of finales) if (conocido(d)) return { ...d.r, texto: d.t };
-    for (const d of finales) {
+  function juzgarVoz(alternativas, pregunta, { temprano = false } = {}) {
+    const dichos = preparar(alternativas, pregunta);
+    if (!dichos.length) return temprano ? { espera: true } : { ok: false, vacia: true };
+    const { p, dir } = pregunta;
+    const tipo = dir === "pc" ? "capital" : "pais";
+    const nombre = dir === "pc" ? p.capital : p.pais;
+    const acierto = (d) => ({ ok: true, exacta: true, nombre, texto: d.t });
+    const puedeSeguir = temprano && esPrincipioDeOtro(p, tipo);
+    // 1. Una de las interpretaciones es una grafía aceptada
+    for (const d of dichos) if (d.r.ok && !puedeSeguir) return acierto(d);
+    // 2. La respuesta va dentro de una frase («creo que es Lima»), salvo que lo dicho sea otro nombre
+    if (!temprano) {
+      for (const d of dichos) {
+        if (conocido(d)) continue;
+        for (const f of trozos(d.t).slice(1)) if (evaluar(f, pregunta, false).ok) return acierto(d);
+      }
+    }
+    // 3. Lista cerrada: el nombre más parecido de todos tiene que ser el correcto, claramente
+    const clavesCorrectas = clavesDe(tipo).filter((c) => c.p === p).map((c) => c.clave);
+    for (const d of dichos) {
+      const k = claveSonora(d.entero);
+      if (k.length < 3) continue;
+      if (conocido(d)) {
+        // Ha dicho otro nombre de la lista: solo vale si suena casi igual que el correcto (Kingston/Kingstown)
+        if (!temprano && Math.max(...clavesCorrectas.map((c) => parecido(k, c))) >= VOZ.homofono) return acierto(d);
+        continue;
+      }
+      const [a, b] = masParecidos(d.entero, tipo);
+      const claro = a.p === p && a.s >= (temprano ? VOZ.temprano : VOZ.umbral) && a.s - (b ? b.s : 0) >= VOZ.margen;
+      if (claro && !puedeSeguir) return acierto(d);
+    }
+    if (temprano) return { espera: true };
+    // 4. Fallo: ha dicho otro nombre de la lista (tal cual, dentro de una frase o claramente parecido)
+    for (const d of dichos) if (conocido(d)) return { ...d.r, texto: d.t };
+    for (const d of dichos) {
       for (const f of trozos(d.t).slice(1)) { const r = evaluar(f, pregunta, false); if (r.comoCapital || r.comoPais) return { ...r, texto: d.t }; }
     }
-    return { ok: false, texto: finales[0].t };
+    for (const d of dichos) {
+      if (claveSonora(d.entero).length < 3) continue;
+      const [a, b] = masParecidos(d.entero, tipo);
+      if (a.p !== p && a.s >= VOZ.otro && a.s - (b ? b.s : 0) >= VOZ.margen) {
+        return { ok: false, [dir === "pc" ? "comoCapital" : "comoPais"]: a.p, texto: dir === "pc" ? a.p.capital : a.p.pais };
+      }
+    }
+    return { dudoso: true, texto: dichos[0].t };
   }
 
   const ORDINALES = [
@@ -224,19 +254,20 @@
    * En el modo de 4 opciones: qué opción se ha dicho, por su número («la dos», «3», «la primera»)
    * o por su nombre. «nombresDe(opcion)» da los nombres aceptados de cada opción. Devuelve 0–3, o -1.
    */
-  function opcionDicha(alternativas, opciones, nombresDe) {
+  function opcionDicha(alternativas, opciones, nombresDe, { temprano = false } = {}) {
     for (const a of alternativas) {
       const n = (sinMuletillas(a) + " ").replace(/^(?:(?:la|el|opcion|numero|respuesta) )+/, "").trim();
       const i = ORDINALES.findIndex((lista) => lista.includes(n));
       if (i >= 0 && i < opciones.length) return i;
     }
     for (const a of alternativas) {
-      for (const f of trozos(a)) {
+      for (const f of temprano ? trozos(a).slice(0, 1) : trozos(a)) {
         const suyas = variantes(f);
         const i = opciones.findIndex((o) => nombresDe(o).some((n) => [...variantes(n)].some((v) => suyas.has(v))));
         if (i >= 0) return i;
       }
     }
+    if (temprano) return -1;
     // Por cómo suena: la más parecida de las cuatro, si se parece lo bastante y se distingue de las demás.
     for (const a of alternativas) {
       const k = claveSonora(sinMuletillas(a));
@@ -259,6 +290,6 @@
 
   global.TABLA = {
     normalizar, variantes, capitalDe, paisDe, evaluar, distancia, distanciaKm, ARTICULO,
-    claveSonora, parecido, masParecidos, evaluarVoz, esNoSe, opcionDicha, VOZ,
+    claveSonora, parecido, masParecidos, juzgarVoz, esNoSe, opcionDicha, VOZ,
   };
 })(typeof window !== "undefined" ? window : globalThis);

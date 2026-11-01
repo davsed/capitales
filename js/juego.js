@@ -22,7 +22,10 @@
     },
   };
 
-  const { normalizar, variantes, capitalDe, paisDe, evaluar, distanciaKm, ARTICULO, evaluarVoz, esNoSe, opcionDicha } = window.TABLA;
+  const {
+    normalizar, variantes, capitalDe, paisDe, evaluar, distanciaKm, ARTICULO,
+    juzgarVoz, esNoSe, opcionDicha, claveSonora, parecido,
+  } = window.TABLA;
   const P = window.PROGRESO;
 
   /* ------------------------------------------------------------------
@@ -508,7 +511,7 @@
      ------------------------------------------------------------------ */
   const AJUSTES_POR_DEFECTO = {
     tipo: "ronda", conts: Object.keys(CONTINENTES), n: 10, dir: "pc", modo: "escribir",
-    tiempo: 0, erratas: true, auto: true, taiwan: false, voz: false,
+    tiempo: 0, erratas: true, auto: true, taiwan: false, voz: false, leer: true,
   };
   /** Ajustes válidos a partir de lo guardado (o de una copia cargada): lo que no se reconoce se ignora. */
   function limpiarAjustes(a, base = AJUSTES_POR_DEFECTO) {
@@ -520,7 +523,7 @@
     if (["pc", "cp", "mix"].includes(a.dir)) r.dir = a.dir;
     if (["escribir", "opciones"].includes(a.modo)) r.modo = a.modo;
     if ([0, 10, 20, 30].includes(a.tiempo)) r.tiempo = a.tiempo;
-    for (const k of ["erratas", "auto", "taiwan", "voz"]) if (typeof a[k] === "boolean") r[k] = a[k];
+    for (const k of ["erratas", "auto", "taiwan", "voz", "leer"]) if (typeof a[k] === "boolean") r[k] = a[k];
     return r;
   }
   let ajustes = limpiarAjustes(almacen.leer("capitales.ajustes", {}));
@@ -585,6 +588,7 @@
     $("#chk-erratas").checked = ajustes.erratas;
     $("#chk-auto").checked = ajustes.auto;
     $("#chk-voz").checked = ajustes.voz;
+    $("#chk-leer").checked = ajustes.leer;
     $("#ajuste-voz").hidden = !vozDisponible;
     pintarVozLocal();
     $("#aviso-voz").hidden = !vozDisponible;
@@ -616,6 +620,7 @@
     if (t.name === "erratas") ajustes.erratas = t.checked;
     if (t.name === "auto") ajustes.auto = t.checked;
     if (t.name === "voz") ajustes.voz = t.checked;
+    if (t.name === "leer") ajustes.leer = t.checked;
     if (t.name === "taiwan") ajustes.taiwan = t.checked;
     refrescarOpciones();
   });
@@ -675,7 +680,7 @@
   const NAV = { tabla: "#nav-tabla", muro: "#nav-muro" };
   function mostrarPantalla(nombre) {
     for (const p of pantallas) $("#pantalla-" + p).hidden = p !== nombre;
-    if (nombre !== "juego") callarVoz();
+    if (nombre !== "juego") cerrarVoz();
     for (const sel of ["#nav-jugar", "#nav-tabla", "#nav-muro"]) $(sel).removeAttribute("aria-current");
     $(NAV[nombre] || "#nav-jugar").setAttribute("aria-current", "page");
     if (nombre === "inicio") { iniciarDemo(); pintarMaratonCurso(); pintarMisDatos(); } else clearInterval(temporizadorDemo);
@@ -866,6 +871,7 @@
     const q = r.preguntas[r.i];
     r.respondida = false;
     r.pista = 0;
+    r.activoPregunta = r.activo;
     clearTimeout(temporizadorSiguiente);
     const esPais = q.dir === "pc";
     const etiqueta = $("#etiqueta-tipo");
@@ -1002,9 +1008,10 @@
     const r = ronda;
     const q = r.preguntas[r.i];
     r.respondida = true;
-    callarVoz();
+    vozRespondida();
     $("#entrada").classList.remove("dictando");
-    const pensado = pararCrono();
+    pararCrono();
+    const pensado = r.activo - (r.activoPregunta ?? r.activo); // lo pensado en esta pregunta
     $("#hud-tiempo").textContent = formatoTiempo(tiempoJugado(r));
     clearInterval(temporizadorReloj);
     let ganados = 0;
@@ -1284,9 +1291,12 @@
   });
 
   /* ------------------------------------------------------------------
-     Voz: el juego dice la pregunta en voz alta y escucha la respuesta.
+     Voz: el juego escucha tu respuesta y, si quieres, dice la pregunta en voz alta.
      Usa lo que trae el navegador (Web Speech API): sin servicios de pago ni cuentas. En Chrome y Edge el
-     audio se transcribe en servidores de Google; en Safari, de Apple. Firefox no lo tiene: allí no se ofrece.
+     audio se transcribe en servidores de Google o Microsoft; en Safari, de Apple. Firefox no lo tiene.
+     El micrófono se abre al empezar la ronda y se queda abierto hasta el final (una sola sesión de
+     reconocimiento continuo): no hay que esperar a que arranque en cada pregunta ni se pierde el principio
+     de lo que dices. Cada pregunta solo atiende a lo que se oye desde que aparece en pantalla.
      ------------------------------------------------------------------ */
   const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
   // Dentro de un marco sin permiso para el micrófono (como la vista previa de claude.ai) no se ofrece.
@@ -1295,17 +1305,22 @@
   const vozDisponible = !!Reconocimiento && microPermitido;
   const pantallaTactil = matchMedia("(pointer: coarse)").matches;
   const voz = {
-    rec: null,          // reconocimiento en marcha
-    estado: "parado",   // leyendo | escuchando | parado
-    turno: 0,           // sube al cambiar de pregunta o al responder: lo que llegue tarde se descarta
-    pausado: false,     // el jugador ha parado el micrófono en esta pregunta (o se ha puesto a escribir)
-    reintentos: 0,
+    rec: null,          // sesión de reconocimiento abierta
+    capta: false,       // el micrófono ya está captando
+    pausado: false,     // el jugador lo ha parado en esta pregunta (o se ha puesto a escribir)
+    resultados: 0,      // resultados de la sesión hasta ahora
+    desde: 0,           // primer resultado de la sesión que cuenta para la pregunta actual
+    eco: null,          // lo que el juego está leyendo en voz alta, para no tomarlo por una respuesta
+    cortes: 0,          // sesiones seguidas que se cortan nada más empezar (para no insistir sin fin)
     error: "",
     nota: null,         // mensaje breve en el botón del micrófono («No te entiendo…»)
-    pendiente: null,    // lo que arranca el reloj de la pregunta cuando el juego termina de leerla
+    destapar: null,     // la pregunta espera a que el micrófono capte para enseñarse
+    cronoParado: false, // el tiempo se ha parado porque el micrófono dejó de captar
   };
   const vozActiva = () => vozDisponible && ajustes.voz;
-  const esperandoRespuesta = () => !!ronda && !ronda.respondida && ronda.i >= 0 && !$("#pantalla-juego").hidden;
+  const enJuego = () => !!ronda && !$("#pantalla-juego").hidden;
+  const esperandoRespuesta = () => enJuego() && !ronda.respondida && ronda.i >= 0;
+  const nombrePreguntado = (q) => (q.dir === "pc" ? q.p.pais : q.p.capital);
 
   let temporizadorAviso = 0;
   /** Mensaje flotante unos segundos (sin permiso para el micrófono, sin conexión…). */
@@ -1318,135 +1333,66 @@
     temporizadorAviso = setTimeout(() => { a.hidden = true; }, 7000);
   }
 
+  /* Lectura en voz alta de la pregunta */
   function vozEspanola() {
     const voces = window.speechSynthesis ? speechSynthesis.getVoices() : [];
     return voces.find((v) => v.lang === "es-ES" && v.localService) || voces.find((v) => v.lang === "es-ES") ||
       voces.find((v) => /^es\b/i.test(v.lang)) || null;
   }
   if (window.speechSynthesis) speechSynthesis.getVoices(); // algunos navegadores cargan las voces la primera vez que se piden
-
-  /** Dice un texto en voz alta y, al terminar, llama a «luego» (también si no hay voz, está silenciado o falla). */
-  function decir(texto, luego) {
-    const turno = voz.turno;
-    let hecho = false;
-    const fin = () => {
-      if (hecho) return;
-      hecho = true;
-      clearTimeout(plazo);
-      if (turno === voz.turno) luego();
-    };
-    const plazo = setTimeout(fin, 1800 + texto.length * 120); // por si el navegador no avisa de que ha terminado
-    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance || !sonido.activo) { fin(); return; }
+  /**
+   * Lee un texto en voz alta, sin esperar a que termine: el micrófono ya está abierto y puedes contestar
+   * encima. Lo que lee el juego también lo oye el micrófono: mientras lee (y un poco después), lo que suene
+   * como lo leído no cuenta como respuesta.
+   */
+  function decir(texto, ...tambien) {
+    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance || !sonido.activo) return;
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(texto);
       u.lang = "es-ES";
       const v = vozEspanola();
       if (v) u.voice = v;
-      u.rate = 1.05;
-      u.onend = fin;
-      u.onerror = fin;
+      u.rate = 1.1;
+      voz.eco = { claves: [texto, ...tambien].map(claveSonora), hasta: performance.now() + 1500 + texto.length * 90 };
+      u.onend = () => { if (voz.eco) voz.eco.hasta = Math.min(voz.eco.hasta, performance.now() + 800); };
       speechSynthesis.speak(u);
-    } catch { fin(); }
+    } catch { /* sin lectura */ }
   }
-
-  /**
-   * Al salir una pregunta: con «Hablar», la dice en voz alta y después abre el micrófono.
-   * «arrancar» pone en marcha el reloj de la pregunta: en cuanto termina de leerla (o enseguida, sin voz).
-   */
-  function vozPregunta(q, arrancar) {
-    callarVoz();
-    voz.pausado = false;
-    voz.reintentos = 0;
-    voz.nota = null;
-    voz.pendiente = arrancar;
-    if (!vozActiva()) { arrancarPendiente(); pintarMicro(); return; }
-    const nombre = q.dir === "pc" ? q.p.pais : q.p.capital;
-    const tipo = ronda.modalidad.dir === "mix" ? (q.dir === "pc" ? "País: " : "Capital: ") : "";
-    voz.estado = "leyendo";
-    pintarMicro();
-    decir(tipo + nombre, () => { arrancarPendiente(); escuchar(); });
-  }
-  function arrancarPendiente() {
-    const f = voz.pendiente;
-    voz.pendiente = null;
-    if (f) f();
-  }
-
-  function pararReconocimiento() {
-    const rec = voz.rec;
-    voz.rec = null; // así su «onend» sabe que se ha parado a propósito y no vuelve a escuchar
-    if (rec) try { rec.abort(); } catch { /* ya estaba parado */ }
-  }
-
-  /** Apaga el micrófono y la lectura (al responder, al cambiar de pregunta o al salir del juego). */
-  function callarVoz() {
-    voz.turno++;
-    pararReconocimiento();
+  function callarLectura() {
     try { if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel(); } catch { /* nada */ }
-    // Si aún se espera la respuesta (se ha apagado «Hablar» mientras leía), el reloj arranca igual.
-    if (esperandoRespuesta()) arrancarPendiente(); else voz.pendiente = null;
-    voz.estado = "parado";
-    pintarMicro();
   }
+  const esEco = (texto) => !!voz.eco && performance.now() < voz.eco.hasta &&
+    voz.eco.claves.some((c) => parecido(claveSonora(texto), c) >= 0.75);
 
-  /** El jugador para el micrófono en esta pregunta (lo toca, o se pone a escribir). */
-  function pausarVoz() {
-    voz.pausado = true;
-    pararReconocimiento();
-    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* nada */ }
-    voz.estado = "parado";
-    pintarMicro();
-  }
-
-  /** Cuando el micrófono no se puede usar: se apaga «Hablar» y se explica por qué. */
-  function apagarVoz(mensaje) {
-    ajustes.voz = false;
-    almacen.guardar("capitales.ajustes", ajustes);
-    callarVoz();
-    pintarConmutadores();
-    $("#chk-voz").checked = false;
-    if (ronda && ronda.i >= 0 && ronda.preguntas[ronda.i]) ponerPlaceholder(ronda.preguntas[ronda.i]);
-    avisar(mensaje);
-  }
-
-  /** Abre el micrófono hasta que haya respuesta. Si se corta por silencio o ruido, vuelve a escuchar. */
-  function escuchar() {
-    pararReconocimiento();
-    if (!vozActiva() || !esperandoRespuesta() || voz.pausado || document.hidden) { voz.estado = "parado"; pintarMicro(); return; }
-    const turno = voz.turno;
+  /* El micrófono */
+  /** Abre el micrófono y lo deja abierto toda la ronda; si el navegador lo corta, lo vuelve a abrir enseguida. */
+  function abrirMicro() {
+    if (voz.rec || !vozActiva() || !enJuego() || voz.pausado || document.hidden) return;
     let rec;
-    try { rec = new Reconocimiento(); } catch { voz.estado = "parado"; pintarMicro(); return; }
+    try { rec = new Reconocimiento(); } catch { return; }
     rec.lang = "es-ES";
+    rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 5;
-    rec.continuous = false;
     // En el ordenador, si está el español descargado: con la lista de capitales o países como ayuda
     const local = usarVozLocal();
     if (local) {
       try { rec.processLocally = true; } catch { /* nada */ }
       if (!vozLocal.sinFrases && window.SpeechRecognitionPhrase && "phrases" in rec) {
-        try { rec.phrases = frasesPara(ronda.preguntas[ronda.i]).map(frase); } catch { vozLocal.sinFrases = true; }
+        try { rec.phrases = frasesRonda().map(frase); } catch { vozLocal.sinFrases = true; }
       }
     }
     const inicio = performance.now();
-    const oidos = []; // lo que va oyendo antes de terminar la frase: a veces lo entiende mejor a medias
-    rec.onstart = () => {
-      if (voz.rec !== rec) return;
-      voz.estado = "escuchando";
-      pintarMicro();
-    };
-    rec.onresult = (e) => {
-      if (voz.rec !== rec || turno !== voz.turno || !esperandoRespuesta()) return;
-      const resultado = e.results[e.results.length - 1];
-      const alternativas = Array.from({ length: resultado.length }, (_, i) => resultado[i].transcript.trim()).filter(Boolean);
-      if (resultado.isFinal) { entendido(alternativas, oidos.slice(-6).reverse()); return; }
-      for (const a of alternativas) if (!oidos.includes(a)) oidos.push(a);
-      if (alternativas.length) oyendo(alternativas[0]);
-    };
+    voz.rec = rec;
+    voz.error = "";
+    voz.resultados = 0;
+    voz.desde = 0;
+    rec.onstart = rec.onaudiostart = () => { if (voz.rec === rec && !voz.capta) micCapta(); };
+    rec.onresult = (e) => { if (voz.rec === rec) oir(e); };
     rec.onerror = (e) => {
       if (voz.rec !== rec) return;
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      if (e.error === "not-allowed" || (e.error === "service-not-allowed" && !local)) {
         apagarVoz("No hay permiso para usar el micrófono. Puedes darlo desde el candado de la barra de direcciones y volver a activar «Hablar».");
       } else if (e.error === "audio-capture") {
         apagarVoz("No se encuentra ningún micrófono. Conecta uno y vuelve a activar «Hablar».");
@@ -1454,6 +1400,7 @@
         vozLocal.sinFrases = true; // sigue sin la lista de ayuda
       } else if (local && (e.error === "language-not-supported" || e.error === "service-not-allowed")) {
         vozLocal.fallo = true; // el reconocimiento en el ordenador no funciona: se vuelve al de siempre
+        pintarVozLocal();
       } else if (e.error === "language-not-supported") {
         apagarVoz("Este navegador no reconoce el español hablado.");
       } else if (e.error === "network") {
@@ -1462,93 +1409,234 @@
       }
     };
     rec.onend = () => {
-      if (voz.rec !== rec) return; // parado a propósito
+      if (voz.rec !== rec) return; // cerrado a propósito
       voz.rec = null;
-      if (turno !== voz.turno || !esperandoRespuesta()) return;
-      // Se ha cortado sin respuesta (silencio, ruido o algo que no se entiende): vuelve a escuchar.
-      voz.reintentos = performance.now() - inicio < 1500 ? voz.reintentos + 1 : 0;
-      if (voz.error || voz.pausado || voz.reintentos > 3 || !vozActiva()) { voz.estado = "parado"; pintarMicro(); return; }
-      setTimeout(() => { if (turno === voz.turno && !voz.rec) escuchar(); }, 150);
+      micNoCapta(true);
+      voz.cortes = performance.now() - inicio < 1500 ? voz.cortes + 1 : 0;
+      if (voz.error || voz.cortes > 3) { pintarMicro(); return; }
+      setTimeout(abrirMicro, 30); // se vuelve a abrir enseguida
     };
-    voz.rec = rec;
-    voz.error = "";
-    try {
-      rec.start();
-      voz.estado = "escuchando";
-    } catch { voz.rec = null; voz.estado = "parado"; }
+    try { rec.start(); } catch { voz.rec = null; }
     pintarMicro();
   }
-
-  /** Lo que se va oyendo, antes de que termine la frase. */
-  function oyendo(texto) {
-    if (modoActual() === "opciones") { voz.nota = { texto: `«${texto.trim()}»`, hasta: performance.now() + 2500 }; pintarMicro(); return; }
-    const e = $("#entrada");
-    e.value = texto.trim();
-    e.classList.add("dictando");
+  function cerrarMicro() {
+    const rec = voz.rec;
+    voz.rec = null; // así su «onend» sabe que se ha cerrado a propósito
+    if (rec) try { rec.abort(); } catch { /* ya estaba cerrado */ }
+    micNoCapta(false);
+    pintarMicro();
+  }
+  function micCapta() {
+    voz.capta = true;
+    if (voz.destapar) { const f = voz.destapar; voz.destapar = null; f(); }
+    else seguirCrono();
+    pintarMicro();
+  }
+  /** «solo»: se ha cortado sin que nadie lo pare. Entonces el tiempo se para hasta que vuelva a captar. */
+  function micNoCapta(solo) {
+    if (!voz.capta) return;
+    voz.capta = false;
+    if (solo && esperandoRespuesta() && ronda.desde) { pararCrono(); voz.cronoParado = true; }
+  }
+  /** El tiempo vuelve a correr si estaba parado por el micrófono. */
+  function seguirCrono() {
+    if (voz.cronoParado && esperandoRespuesta()) { voz.cronoParado = false; arrancarCrono(); }
+  }
+  /** El jugador para el micrófono en esta pregunta (lo toca, o se pone a escribir). */
+  function pausarVoz() {
+    voz.pausado = true;
+    callarLectura();
+    cerrarMicro();
+    seguirCrono();
+  }
+  /** Al salir del juego o al apagar «Hablar». */
+  function cerrarVoz() {
+    callarLectura();
+    cerrarMicro();
+    const f = voz.destapar;
+    voz.destapar = null;
+    if (f && esperandoRespuesta()) f(); // la pregunta que esperaba al micrófono se enseña ya
+    seguirCrono();
+  }
+  /** Cuando el micrófono no se puede usar: se apaga «Hablar» y se explica por qué. */
+  function apagarVoz(mensaje) {
+    ajustes.voz = false;
+    almacen.guardar("capitales.ajustes", ajustes);
+    cerrarVoz();
+    pintarConmutadores();
+    $("#chk-voz").checked = false;
+    if (ronda && ronda.i >= 0 && ronda.preguntas[ronda.i]) ponerPlaceholder(ronda.preguntas[ronda.i]);
+    avisar(mensaje);
   }
 
   /**
-   * Frase terminada: se responde con ella, se pasa («no sé») o, si no se entiende, se sigue escuchando.
-   * «parciales» es lo que fue oyendo antes de terminarla, por si a medias lo entendió mejor.
+   * Al salir una pregunta. Sin «Hablar», el tiempo arranca enseguida. Con «Hablar», la pregunta no se enseña
+   * hasta que el micrófono capta (solo pasa al empezar la ronda o si se ha cortado: si no, ya está abierto);
+   * entonces arranca el tiempo y, si está activado, el juego la lee en voz alta.
    */
-  function entendido(alternativas, parciales = []) {
-    const q = ronda.preguntas[ronda.i];
-    if (esNoSe(alternativas)) { registrar({ ok: false, voz: true }, "", true); return; }
-    if (modoActual() === "opciones") {
-      const nombres = (o) => (q.dir === "pc" ? [o.capital, ...o.capitalAlt] : [o.pais, ...o.paisAlt]);
-      let i = opcionDicha(alternativas, q.opciones, nombres);
-      if (i < 0 && parciales.length) i = opcionDicha(parciales, q.opciones, nombres);
-      const boton = i >= 0 ? $("#opciones4").children[i] : null;
-      if (boton && !boton.disabled) { responderOpcion(q.opciones[i]); return; }
-      if (!alternativas.length) return;
-      voz.nota = { texto: `No te entiendo: «${alternativas[0]}»`, hasta: performance.now() + 2500 };
+  function vozPregunta(q, arrancar) {
+    callarLectura();
+    voz.pausado = false;
+    voz.nota = null;
+    voz.cronoParado = false;
+    voz.cortes = 0;
+    const caja = $("#caja-pregunta");
+    if (!vozActiva()) { caja.classList.remove("esperando-micro"); arrancar(); pintarMicro(); return; }
+    const destapar = () => {
+      caja.classList.remove("esperando-micro");
+      voz.desde = voz.resultados; // solo cuenta lo que se oiga desde ahora
+      arrancar();
+      if (!voz.capta && ronda.desde) { pararCrono(); voz.cronoParado = true; } // sin micrófono aún, el tiempo espera
+      if (ajustes.leer) {
+        const tipo = ronda.modalidad.dir === "mix" ? (q.dir === "pc" ? "País: " : "Capital: ") : "";
+        decir(tipo + nombrePreguntado(q), nombrePreguntado(q));
+      }
       pintarMicro();
-      setTimeout(pintarMicro, 2600);
-      return;
-    }
-    const res = evaluarVoz(alternativas, q, parciales);
-    const e = $("#entrada");
-    if (res.vacia) { e.value = ""; e.classList.remove("dictando"); return; } // solo muletillas: se sigue escuchando
-    e.value = res.texto;
-    registrar({ ...res, voz: true }, res.texto);
+    };
+    if (voz.capta) { destapar(); return; }
+    caja.classList.add("esperando-micro");
+    voz.destapar = destapar;
+    abrirMicro();
+    // Si el micrófono tarda demasiado, la pregunta se enseña igual (el tiempo espera a que capte)
+    setTimeout(() => { if (voz.destapar === destapar) { voz.destapar = null; destapar(); } }, 2500);
+    pintarMicro();
+  }
+  /** Al responder: el micrófono sigue abierto para la siguiente pregunta; lo que se oiga hasta entonces no cuenta. */
+  function vozRespondida() {
+    callarLectura();
+    voz.nota = null;
+    voz.destapar = null;
+    voz.cronoParado = false;
+    $("#caja-pregunta").classList.remove("esperando-micro");
+    pintarMicro();
   }
 
-  /** El botón del micrófono, bajo la instrucción: «Escucha…», «Te escucho» o «Toca para hablar». */
+  /** Lo que llega del reconocimiento: frases terminadas y lo que va oyendo a medias. */
+  function oir(e) {
+    voz.resultados = e.results.length;
+    if (!esperandoRespuesta() || voz.destapar) return;
+    const q = ronda.preguntas[ronda.i];
+    const frases = [];
+    for (let i = voz.desde; i < e.results.length; i++) {
+      const r = e.results[i];
+      const alternativas = Array.from({ length: r.length }, (_, k) => r[k].transcript.trim()).filter((t) => t && !esEco(t));
+      if (alternativas.length) frases.push({ alternativas, final: r.isFinal });
+    }
+    if (!frases.length) return;
+    const ultima = frases[frases.length - 1];
+    // Lo dicho: la última frase, y unida a las anteriores por si una respuesta se ha partido en dos
+    const candidatos = [...ultima.alternativas];
+    for (let k = 2; k <= Math.min(3, frases.length); k++) candidatos.push(frases.slice(-k).map((f) => f.alternativas[0]).join(" "));
+    if (!ultima.final) mostrarOido(ultima.alternativas[0]);
+    responderVoz(q, candidatos, !ultima.final);
+  }
+
+  /**
+   * Responde con lo oído. A medias («temprano») solo si es inequívoco, para no esperar a que el navegador dé
+   * la frase por terminada. Con la frase terminada: acierto, fallo (otro nombre de la lista), «no sé» para
+   * pasar o, si no se parece claramente a nada, se sigue escuchando.
+   */
+  function responderVoz(q, candidatos, temprano) {
+    if (!temprano && esNoSe(candidatos)) { anotarVoz(q, candidatos[0], "pasada"); registrar({ ok: false, voz: true }, "", true); return; }
+    if (modoActual() === "opciones") {
+      const nombres = (o) => (q.dir === "pc" ? [o.capital, ...o.capitalAlt] : [o.pais, ...o.paisAlt]);
+      const i = opcionDicha(candidatos, q.opciones, nombres, { temprano });
+      const boton = i >= 0 ? $("#opciones4").children[i] : null;
+      if (boton && !boton.disabled) {
+        anotarVoz(q, candidatos[0], q.opciones[i] === q.p ? "acierto" : "fallo");
+        responderOpcion(q.opciones[i]);
+      } else if (!temprano) noEntendido(q, candidatos[0]);
+      return;
+    }
+    const r = juzgarVoz(candidatos, q, { temprano });
+    if (r.espera || r.vacia) return;
+    if (r.dudoso) { noEntendido(q, r.texto); return; }
+    const e = $("#entrada");
+    e.classList.remove("dictando");
+    e.value = r.ok ? r.nombre : r.texto; // si acierta, bien escrito; si no, lo que ha dicho
+    anotarVoz(q, candidatos[0], r.ok ? "acierto" : "fallo");
+    registrar({ ...r, voz: true }, e.value);
+  }
+  function mostrarOido(texto) {
+    if (modoActual() === "opciones") { voz.nota = { texto: `«${texto}»`, hasta: performance.now() + 2500 }; pintarMicro(); return; }
+    const e = $("#entrada");
+    e.value = texto;
+    e.classList.add("dictando");
+  }
+  function noEntendido(q, texto) {
+    anotarVoz(q, texto, "no entendido");
+    voz.nota = { texto: `No te entiendo: «${texto}»`, hasta: performance.now() + 2500 };
+    const e = $("#entrada");
+    if (e.classList.contains("dictando")) { e.value = ""; e.classList.remove("dictando"); }
+    pintarMicro();
+    setTimeout(pintarMicro, 2600);
+  }
+
+  /* Registro de lo que ha oído el micrófono (las últimas 80 respuestas), para revisarlo o enviarlo */
+  const REGISTRO_VOZ = "capitales.voz.registro";
+  function anotarVoz(q, oido, resultado) {
+    const lista = almacen.leer(REGISTRO_VOZ, []);
+    lista.push({ fecha: new Date().toISOString(), pregunta: nombrePreguntado(q), esperado: q.dir === "pc" ? q.p.capital : q.p.pais, oido, resultado });
+    almacen.guardar(REGISTRO_VOZ, lista.slice(-80));
+  }
+  function textoRegistroVoz() {
+    return almacen.leer(REGISTRO_VOZ, []).slice().reverse()
+      .map((x) => `${x.pregunta}: se esperaba «${x.esperado}» y oyó «${x.oido}» → ${x.resultado}`).join("\n");
+  }
+  function pintarRegistroVoz() {
+    const lista = $("#lista-registro-voz");
+    const lineas = textoRegistroVoz();
+    lista.textContent = "";
+    for (const linea of lineas ? lineas.split("\n") : ["Aún no has respondido nada hablando."]) {
+      const li = document.createElement("li");
+      li.textContent = linea;
+      lista.appendChild(li);
+    }
+    $("#btn-copiar-voz").hidden = !lineas;
+  }
+  $("#registro-voz").addEventListener("toggle", () => { if ($("#registro-voz").open) pintarRegistroVoz(); });
+  $("#btn-copiar-voz").addEventListener("click", async () => {
+    const texto = `Lo que ha oído el micrófono (${describirNavegador()}):\n` + textoRegistroVoz();
+    try { await navigator.clipboard.writeText(texto); avisar("Copiado. Pégalo donde quieras enviarlo."); }
+    catch { avisar("No se ha podido copiar: selecciona la lista y cópiala a mano."); }
+  });
+
+  /** El botón del micrófono, bajo la instrucción: «Te escucho», «Abriendo el micrófono…» o «Toca para hablar». */
   function pintarMicro() {
     const b = $("#btn-micro");
     const visible = vozActiva() && esperandoRespuesta();
     b.hidden = !visible;
     if (!visible) return;
-    b.dataset.estado = voz.estado;
+    const estado = voz.capta ? "escuchando" : voz.rec ? "abriendo" : "parado";
+    b.dataset.estado = estado;
     const nota = voz.nota && voz.nota.hasta > performance.now() ? voz.nota.texto : "";
-    const textos = { leyendo: "Escucha…", escuchando: "Te escucho", parado: "Toca para hablar" };
-    $("#micro-texto").textContent = nota || textos[voz.estado];
-    b.setAttribute("aria-label", voz.estado === "escuchando" ? "Te escucho. Toca para parar el micrófono" : textos[voz.estado]);
+    const textos = { escuchando: "Te escucho", abriendo: "Abriendo…", parado: "Toca para hablar" };
+    $("#micro-texto").textContent = nota || textos[estado];
+    b.setAttribute("aria-label", estado === "parado" ? textos.parado : `${textos[estado]}. Toca para parar el micrófono`);
   }
   $("#btn-micro").addEventListener("click", () => {
     if (!esperandoRespuesta()) return;
-    if (voz.estado === "leyendo") { try { speechSynthesis.cancel(); } catch { /* nada */ } return; } // deja de leer y escucha ya
-    if (voz.estado === "escuchando") { pausarVoz(); return; }
+    if (voz.rec) { pausarVoz(); return; }
     voz.pausado = false;
-    voz.reintentos = 0;
+    voz.cortes = 0;
     voz.nota = null;
-    escuchar();
+    abrirMicro();
   });
   // Si te pones a escribir, el micrófono se para en esta pregunta.
   $("#entrada").addEventListener("input", () => {
     $("#entrada").classList.remove("dictando");
-    if (voz.estado !== "parado") pausarVoz();
+    if (voz.rec) pausarVoz();
   });
   document.addEventListener("visibilitychange", () => {
     if (!vozActiva()) return;
-    if (document.hidden) pararReconocimiento();
-    else if (esperandoRespuesta() && !voz.pausado && voz.estado !== "leyendo") escuchar();
+    if (document.hidden) { callarLectura(); cerrarMicro(); } else abrirMicro();
   });
 
   /* Reconocimiento en el propio ordenador (Chrome 139 o posterior, en Windows, Mac y Linux). Con él se le
      puede dar al reconocedor la lista de capitales o países que pueden salir («contextual biasing»), y así
      entiende mejor los nombres raros; además, la voz no sale del ordenador. Hay que descargar el español
-     una vez (SpeechRecognition.install). Si algo falla, se vuelve al reconocimiento de siempre. */
+     una vez (SpeechRecognition.install). Con el reconocimiento por internet, Chrome no admite esa lista.
+     Si algo falla, se vuelve al reconocimiento de siempre. */
   const vozLocal = {
     estado: "no",      // no | unavailable | downloadable | downloading | available
     sinFrases: false,  // el navegador no admite la lista de ayuda
@@ -1557,12 +1645,15 @@
   };
   const OPCIONES_LOCAL = { langs: ["es-ES"], processLocally: true };
   const usarVozLocal = () => vozLocal.estado === "available" && !vozLocal.fallo;
-  /** Lo que puede responderse a esta pregunta: las capitales (o los países), o las cuatro opciones. */
-  function frasesPara(q) {
-    const nombre = (x) => (q.dir === "pc" ? x.capital : x.pais);
-    const lista = modoActual() === "opciones" && q.opciones
-      ? [...q.opciones.map(nombre), "uno", "dos", "tres", "cuatro"]
-      : paisesDisponibles().map(nombre);
+  /** Lo que puede responderse en esta ronda: las capitales o los países (los dos en la mezcla), y «no sé». */
+  function frasesRonda() {
+    const dir = ronda.modalidad.dir;
+    const lista = [];
+    for (const x of paisesDisponibles()) {
+      if (dir !== "cp") lista.push(x.capital);
+      if (dir !== "pc") lista.push(x.pais);
+    }
+    if (modoActual() === "opciones") lista.push("uno", "dos", "tres", "cuatro");
     return [...new Set([...lista, "no sé", "paso"])];
   }
   /** Una frase de la lista de ayuda, con refuerzo (si el navegador no admite ese refuerzo, con el normal). */
@@ -1586,19 +1677,34 @@
       avisar("No se ha podido descargar el español. Se sigue usando el reconocimiento de siempre.");
     }
   }
+  /** Navegador y sistema, para explicar qué reconocimiento se usa (y para el registro que se envía). */
+  function describirNavegador() {
+    const ua = navigator.userAgent;
+    const so = /Android/.test(ua) ? "Android" : /iPhone|iPad|iPod/.test(ua) ? "iPhone o iPad" : /Mac OS X/.test(ua) ? "Mac"
+      : /Windows/.test(ua) ? "Windows" : /CrOS/.test(ua) ? "ChromeOS" : /Linux/.test(ua) ? "Linux" : "";
+    const m = ua.match(/(Edg|OPR|SamsungBrowser|CriOS|FxiOS|Firefox|Chrome|Version)\/(\d+)/);
+    const nombres = { Edg: "Edge", OPR: "Opera", SamsungBrowser: "Samsung Internet", CriOS: "Chrome", FxiOS: "Firefox", Firefox: "Firefox", Chrome: "Chrome", Version: "Safari" };
+    return [m ? `${nombres[m[1]]} ${m[2]}` : "", so].filter(Boolean).join(" en ") || "desconocido";
+  }
+  /** Qué reconocimiento se usa, y la descarga del español si el navegador la permite (en «Más opciones»). */
   function pintarVozLocal() {
     const caja = $("#voz-local");
-    caja.hidden = !vozDisponible || !ajustes.voz || !["downloadable", "downloading", "available"].includes(vozLocal.estado);
+    caja.hidden = !vozDisponible || !ajustes.voz;
     if (caja.hidden) return;
+    const e = vozLocal.fallo ? "fallo" : vozLocal.estado;
     const textos = {
       downloadable: "Tu navegador puede reconocer la voz en el propio ordenador, con la lista de capitales y países " +
         "como ayuda: entiende mejor los nombres raros y tu voz no sale del ordenador. Hay que descargar el español una vez.",
-      downloading: "Descargando el español… Mientras tanto se usa el reconocimiento de siempre.",
+      downloading: "Descargando el español… Mientras tanto se usa el reconocimiento por internet.",
       available: "✓ La voz se reconoce en tu ordenador, con la lista de capitales y países como ayuda.",
+      fallo: "El reconocimiento en el ordenador ha fallado; se usa el de internet.",
+      unavailable: `La voz se reconoce por internet. Tu navegador (${describirNavegador()}) puede reconocerla en el ordenador, pero no en español.`,
+      no: `La voz se reconoce por internet. Tu navegador (${describirNavegador()}) no puede reconocerla en el propio ordenador ` +
+        "con la lista de capitales como ayuda: eso solo lo tiene Chrome 139 o posterior en Windows, Mac o Linux.",
     };
-    $("#voz-local-texto").textContent = textos[vozLocal.estado];
-    caja.classList.toggle("lista", vozLocal.estado === "available");
-    $("#btn-voz-local").hidden = vozLocal.estado !== "downloadable";
+    $("#voz-local-texto").textContent = textos[e] || textos.no;
+    caja.classList.toggle("lista", e === "available");
+    $("#btn-voz-local").hidden = e !== "downloadable";
   }
   $("#btn-voz-local").addEventListener("click", instalarVozLocal);
   comprobarVozLocal();
@@ -1623,13 +1729,13 @@
     if (ronda && ronda.i >= 0 && ronda.preguntas[ronda.i]) ponerPlaceholder(ronda.preguntas[ronda.i]);
     if (ajustes.voz) {
       voz.pausado = false;
-      voz.reintentos = 0;
-      if (esperandoRespuesta()) escuchar();
+      voz.cortes = 0;
+      abrirMicro();
       if (vozLocal.estado === "downloadable" && !vozLocal.avisado) {
         vozLocal.avisado = true;
         avisar("Consejo: en «Más opciones» puedes descargar el español para que la voz se reconozca en tu ordenador y entienda mejor los nombres de capitales y países.");
       }
-    } else callarVoz();
+    } else cerrarVoz();
     pintarMicro();
   });
   $("#chk-auto-juego").addEventListener("change", (e) => {
@@ -2011,7 +2117,7 @@
   $("#btn-marca").addEventListener("click", irAInicio);
   $("#nav-jugar").addEventListener("click", irAInicio);
   function detenerRonda() {
-    callarVoz();
+    cerrarVoz();
     clearInterval(temporizadorReloj);
     clearInterval(temporizadorCrono);
     clearTimeout(temporizadorSiguiente);

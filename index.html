@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@500;700&display=swap">
-<link rel="stylesheet" href="css/estilos.css?v=d3e839b69d">
+<link rel="stylesheet" href="css/estilos.css?v=086ab1016f">
 </head>
 <body>
 <!--CONTENIDO-->
@@ -146,6 +146,15 @@
             <div class="voz-local" id="voz-local" hidden>
               <p id="voz-local-texto"></p>
               <button type="button" class="btn-secundario" id="btn-voz-local" hidden>Descargar el español</button>
+              <label class="ajuste interruptor" for="chk-leer">
+                <span>Leer la pregunta en voz alta<small>Puedes contestar mientras la lee</small></span>
+                <input type="checkbox" id="chk-leer" name="leer" checked>
+              </label>
+              <details class="registro-voz" id="registro-voz">
+                <summary>Lo que ha oído el micrófono</summary>
+                <ol class="lista-registro-voz" id="lista-registro-voz"></ol>
+                <button type="button" class="btn-secundario" id="btn-copiar-voz" hidden>Copiar para enviarlo</button>
+              </details>
             </div>
             <label class="ajuste" for="sel-tiempo">
               <span>Tiempo por pregunta</span>
@@ -456,10 +465,10 @@
 <!--/CONTENIDO-->
 <script src="js/datos.js?v=e489fb3244"></script>
 <script src="js/mapa.js?v=9dc4cd9d85"></script>
-<script src="js/tabla.js?v=0fa0dc45bb"></script>
+<script src="js/tabla.js?v=6f90b22900"></script>
 <script src="js/progreso.js?v=76d7fa1dcf"></script>
 <script src="js/muro-config.js?v=5a2468ccc4"></script>
 <script src="js/muro.js?v=6fc4b239dc"></script>
-<script src="js/juego.js?v=f94df4a739"></script>
+<script src="js/juego.js?v=b9e9ee63db"></script>
 </body>
 </html>
