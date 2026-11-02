@@ -378,7 +378,7 @@ a.nav-btn { color: var(--tinta-suave); }
 .micro span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .micro[data-estado="escuchando"] { border-color: var(--mal); color: var(--mal); background: var(--mal-suave); }
 .micro[data-estado="escuchando"] svg { animation: latido-micro 1.1s ease-in-out infinite; }
-.micro[data-estado="abriendo"] svg { opacity: 0.5; }
+.micro[data-estado="abriendo"] svg, .micro[data-estado="leyendo"] svg { opacity: 0.5; }
 /* Con «Hablar», la pregunta espera a que el micrófono capte (al empezar la ronda) para enseñarse */
 .banda { position: relative; }
 .pregunta.esperando-micro .banda .tablero, .pregunta.esperando-micro .bandera-pregunta { visibility: hidden; }

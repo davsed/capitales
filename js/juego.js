@@ -899,7 +899,8 @@
     $("#acciones-pregunta").hidden = false;
     $("#btn-pista").disabled = false;
     $("#texto-pista").hidden = true;
-    pintarTablero($("#tablero"), esPais ? q.p.pais : q.p.capital, { anchoMax: 40, preferirLinea: true });
+    // Con «Hablar», las letras giran sin el clic (el micrófono lo oiría)
+    pintarTablero($("#tablero"), esPais ? q.p.pais : q.p.capital, { anchoMax: 40, preferirLinea: true, conSonido: !vozActiva() });
     anunciar(`${esPais ? "País" : "Capital"}: ${esPais ? q.p.pais : q.p.capital}`);
 
     if (opciones) {
@@ -1298,9 +1299,12 @@
      Voz: el juego escucha tu respuesta y, si quieres, dice la pregunta en voz alta.
      Usa lo que trae el navegador (Web Speech API): sin servicios de pago ni cuentas. En Chrome y Edge el
      audio se transcribe en servidores de Google o Microsoft; en Safari, de Apple. Firefox no lo tiene.
-     El micrófono se abre al empezar la ronda y se queda abierto hasta el final (una sola sesión de
-     reconocimiento continuo): no hay que esperar a que arranque en cada pregunta ni se pierde el principio
-     de lo que dices. Cada pregunta solo atiende a lo que se oye desde que aparece en pantalla.
+     En el ordenador, el micrófono se abre al empezar la ronda y se queda abierto hasta el final (una sola
+     sesión de reconocimiento continuo): no hay que esperar a que arranque en cada pregunta ni se pierde el
+     principio de lo que dices. Cada pregunta solo atiende a lo que se oye desde que aparece en pantalla.
+     En el móvil eso no funciona: el reconocimiento continuo va mal, Android pita cada vez que abre el
+     micrófono y el altavoz está pegado al micrófono. Allí se abre una vez por pregunta (después de leerla,
+     si se lee) y se cierra al responder.
      ------------------------------------------------------------------ */
   const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
   // Dentro de un marco sin permiso para el micrófono (como la vista previa de claude.ai) no se ofrece.
@@ -1308,6 +1312,9 @@
   const microPermitido = !(politica && politica.allowsFeature && !politica.allowsFeature("microphone"));
   const vozDisponible = !!Reconocimiento && microPermitido;
   const pantallaTactil = matchMedia("(pointer: coarse)").matches;
+  const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); // los iPad se presentan como Mac
+  const vozContinua = !esMovil;
   const voz = {
     rec: null,          // sesión de reconocimiento abierta
     capta: false,       // el micrófono ya está captando
@@ -1316,6 +1323,8 @@
     desde: 0,           // primer resultado de la sesión que cuenta para la pregunta actual
     eco: null,          // lo que el juego está leyendo en voz alta, para no tomarlo por una respuesta
     cortes: 0,          // sesiones seguidas que se cortan nada más empezar (para no insistir sin fin)
+    silencios: 0,       // en el móvil: veces seguidas que se ha cortado sin oír nada en esta pregunta
+    leyendo: false,     // en el móvil: el juego está leyendo la pregunta y el micrófono espera a que acabe
     error: "",
     nota: null,         // mensaje breve en el botón del micrófono («No te entiendo…»)
     destapar: null,     // la pregunta espera a que el micrófono capte para enseñarse
@@ -1345,12 +1354,20 @@
   }
   if (window.speechSynthesis) speechSynthesis.getVoices(); // algunos navegadores cargan las voces la primera vez que se piden
   /**
-   * Lee un texto en voz alta, sin esperar a que termine: el micrófono ya está abierto y puedes contestar
-   * encima. Lo que lee el juego también lo oye el micrófono: mientras lee (y un poco después), lo que suene
-   * como lo leído no cuenta como respuesta.
+   * Lee un texto en voz alta. En el ordenador no se espera a que termine: el micrófono ya está abierto y
+   * puedes contestar encima. Lo que lee el juego también lo oye el micrófono: mientras lee (y hasta un
+   * segundo y medio después, lo que tarda en llegar la transcripción), lo que suene como lo leído no cuenta.
+   * «alTerminar» se llama al acabar de leer (o enseguida, si no se puede leer).
    */
-  function decir(texto, ...tambien) {
-    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance || !sonido.activo) return;
+  function decir(texto, { tambien = [], alTerminar = null } = {}) {
+    let hecho = false;
+    const fin = () => {
+      if (hecho) return;
+      hecho = true;
+      if (voz.eco) voz.eco.hasta = Math.min(voz.eco.hasta, performance.now() + 1500);
+      if (alTerminar) alTerminar();
+    };
+    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance || !sonido.activo) { fin(); return; }
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(texto);
@@ -1358,10 +1375,12 @@
       const v = vozEspanola();
       if (v) u.voice = v;
       u.rate = 1.1;
-      voz.eco = { claves: [texto, ...tambien].map(claveSonora), hasta: performance.now() + 1500 + texto.length * 90 };
-      u.onend = () => { if (voz.eco) voz.eco.hasta = Math.min(voz.eco.hasta, performance.now() + 800); };
+      voz.eco = { claves: [texto, ...tambien].map(claveSonora), hasta: performance.now() + 3000 + texto.length * 120 };
+      u.onend = fin;
+      u.onerror = fin;
+      setTimeout(fin, 2500 + texto.length * 120); // por si el navegador no avisa de que ha terminado
       speechSynthesis.speak(u);
-    } catch { /* sin lectura */ }
+    } catch { fin(); }
   }
   function callarLectura() {
     try { if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel(); } catch { /* nada */ }
@@ -1370,13 +1389,17 @@
     voz.eco.claves.some((c) => parecido(claveSonora(texto), c) >= 0.75);
 
   /* El micrófono */
-  /** Abre el micrófono y lo deja abierto toda la ronda; si el navegador lo corta, lo vuelve a abrir enseguida. */
+  /**
+   * Abre el micrófono. En el ordenador lo deja abierto toda la ronda y, si el navegador lo corta, lo vuelve a
+   * abrir enseguida. En el móvil, solo mientras hay una pregunta esperando respuesta.
+   */
   function abrirMicro() {
     if (voz.rec || !vozActiva() || !enJuego() || voz.pausado || document.hidden) return;
+    if (!vozContinua && !esperandoRespuesta()) return;
     let rec;
     try { rec = new Reconocimiento(); } catch { return; }
     rec.lang = "es-ES";
-    rec.continuous = true;
+    rec.continuous = vozContinua;
     rec.interimResults = true;
     rec.maxAlternatives = 5;
     // En el ordenador, si está el español descargado: con la lista de capitales o países como ayuda
@@ -1388,12 +1411,13 @@
       }
     }
     const inicio = performance.now();
+    let oyo = false;
     voz.rec = rec;
     voz.error = "";
     voz.resultados = 0;
     voz.desde = 0;
     rec.onstart = rec.onaudiostart = () => { if (voz.rec === rec && !voz.capta) micCapta(); };
-    rec.onresult = (e) => { if (voz.rec === rec) oir(e); };
+    rec.onresult = (e) => { if (voz.rec === rec) { oyo = true; oir(e); } };
     rec.onerror = (e) => {
       if (voz.rec !== rec) return;
       if (e.error === "not-allowed" || (e.error === "service-not-allowed" && !local)) {
@@ -1421,7 +1445,14 @@
       micNoCapta(true);
       voz.cortes = performance.now() - inicio < 1500 ? voz.cortes + 1 : 0;
       if (voz.error || voz.cortes > 3) { pintarMicro(); return; }
-      setTimeout(abrirMicro, 30); // se vuelve a abrir enseguida (sin lo que ha fallado)
+      if (!vozContinua) {
+        // En el móvil: entre preguntas no se abre (cada vez que se abre, Android pita); y si se corta sin
+        // oír nada, se insiste dos veces y después espera a que toques el micrófono (el tiempo, parado).
+        if (!esperandoRespuesta()) { pintarMicro(); return; }
+        voz.silencios = oyo ? 0 : voz.silencios + 1;
+        if (voz.silencios > 2) { pintarMicro(); return; }
+      }
+      setTimeout(abrirMicro, vozContinua ? 30 : 120); // se vuelve a abrir enseguida (sin lo que ha fallado)
     };
     rec.onend = terminada;
     try { rec.start(); } catch { voz.rec = null; }
@@ -1488,19 +1519,28 @@
     voz.nota = null;
     voz.cronoParado = false;
     voz.cortes = 0;
+    voz.silencios = 0;
     const caja = $("#caja-pregunta");
     if (!vozActiva()) { caja.classList.remove("esperando-micro"); arrancar(); pintarMicro(); return; }
+    const texto = (ronda.modalidad.dir === "mix" ? (q.dir === "pc" ? "País: " : "Capital: ") : "") + nombrePreguntado(q);
+    const leer = ajustes.leer && sonido.activo && !!window.speechSynthesis;
     const destapar = () => {
       caja.classList.remove("esperando-micro");
       voz.desde = voz.resultados; // solo cuenta lo que se oiga desde ahora
       arrancar();
       if (!voz.capta && ronda.desde) { pararCrono(); voz.cronoParado = true; } // sin micrófono aún, el tiempo espera
-      if (ajustes.leer) {
-        const tipo = ronda.modalidad.dir === "mix" ? (q.dir === "pc" ? "País: " : "Capital: ") : "";
-        decir(tipo + nombrePreguntado(q), nombrePreguntado(q));
-      }
+      if (leer && vozContinua) decir(texto, { tambien: [nombrePreguntado(q)] });
       pintarMicro();
     };
+    if (!vozContinua && leer) {
+      // Móvil: se enseña y se lee la pregunta, y el micrófono se abre al terminar de leerla (para que no se oiga
+      // a sí mismo). El tiempo empieza cuando el micrófono capta.
+      cerrarMicro();
+      voz.leyendo = true;
+      destapar();
+      decir(texto, { tambien: [nombrePreguntado(q)], alTerminar: () => { voz.leyendo = false; pintarMicro(); setTimeout(abrirMicro, 150); } });
+      return;
+    }
     if (voz.capta) { destapar(); return; }
     caja.classList.add("esperando-micro");
     voz.destapar = destapar;
@@ -1509,8 +1549,13 @@
     setTimeout(() => { if (voz.destapar === destapar) { voz.destapar = null; destapar(); } }, 2500);
     pintarMicro();
   }
-  /** Al responder: el micrófono sigue abierto para la siguiente pregunta; lo que se oiga hasta entonces no cuenta. */
+  /**
+   * Al responder. En el ordenador, el micrófono sigue abierto para la siguiente pregunta (lo que se oiga hasta
+   * entonces no cuenta). En el móvil se cierra.
+   */
   function vozRespondida() {
+    voz.leyendo = false;
+    if (!vozContinua) cerrarMicro();
     callarLectura();
     voz.nota = null;
     voz.destapar = null;
@@ -1615,10 +1660,10 @@
     const visible = vozActiva() && esperandoRespuesta();
     b.hidden = !visible;
     if (!visible) return;
-    const estado = voz.capta ? "escuchando" : voz.rec ? "abriendo" : "parado";
+    const estado = voz.capta ? "escuchando" : voz.rec ? "abriendo" : voz.leyendo ? "leyendo" : "parado";
     b.dataset.estado = estado;
     const nota = voz.nota && voz.nota.hasta > performance.now() ? voz.nota.texto : "";
-    const textos = { escuchando: "Te escucho", abriendo: "Abriendo…", parado: "Toca para hablar" };
+    const textos = { escuchando: "Te escucho", abriendo: "Abriendo…", leyendo: "Escucha…", parado: "Toca para hablar" };
     $("#micro-texto").textContent = nota || textos[estado];
     b.setAttribute("aria-label", estado === "parado" ? textos.parado : `${textos[estado]}. Toca para parar el micrófono`);
   }
@@ -1627,7 +1672,9 @@
     if (voz.rec) { pausarVoz(); return; }
     voz.pausado = false;
     voz.cortes = 0;
+    voz.silencios = 0;
     voz.nota = null;
+    callarLectura(); // si estaba leyendo la pregunta, se corta y escucha ya
     abrirMicro();
   });
   // Si te pones a escribir, el micrófono se para en esta pregunta.
