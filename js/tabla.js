@@ -88,17 +88,18 @@
   /** Clave de cómo suena un nombre: dos grafías que se pronuncian igual dan la misma clave. */
   function claveSonora(texto) {
     return normalizar(texto).replace(ARTICULO, "").replace(/ /g, "")
+      .replace(/igh/g, "ai").replace(/ng(?![aeiou])/g, "n") // a la inglesa: «night» suena «nait», «kingsensa», «kinsensa»
       .replace(/sh/g, "s").replace(/ch/g, "C").replace(/kh/g, "j").replace(/ph/g, "f").replace(/th/g, "t")
       .replace(/ou/g, "u").replace(/w/g, "u")
       .replace(/gu([ei])/g, "G$1").replace(/g([ei])/g, "j$1").replace(/G/g, "g")
       .replace(/qu/g, "k").replace(/c([ei])/g, "s$1").replace(/c/g, "k")
-      .replace(/ll/g, "y").replace(/v/g, "b").replace(/z/g, "s").replace(/h/g, "")
+      .replace(/ll(?=[aeiou])/g, "y").replace(/ll/g, "l").replace(/v/g, "b").replace(/z/g, "s").replace(/h/g, "")
       .replace(/y(?![aeiou])/g, "i")
       .replace(/(.)\1+/g, "$1");
   }
 
   // Muletillas que se dicen antes de la respuesta: «pues…», «creo que es…», «la capital es…»
-  const MULETILLAS = /^(?:(?:pues|eh+|em+|m+|uf+|a ver|vale|bueno|creo que|seguro que|yo creo que|sera|seria|es|son|la respuesta es|la capital es|la capital de .{1,40}? es|su capital es|el pais es|es la capital de) )+/;
+  const MULETILLAS = /^(?:(?:pues|eh+|em+|m+|uf+|a ver|bueno|creo que|seguro que|yo creo que|sera|seria|es|son|la respuesta es|la capital es|la capital de .{1,40}? es|su capital es|el pais es|es la capital de) )+/;
   const sinMuletillas = (texto) => (normalizar(texto) + " ").replace(MULETILLAS, "").trim();
   /** Lo dicho y sus trozos (de 1 a 4 palabras), para encontrar la respuesta dentro de una frase. */
   function trozos(texto) {
@@ -163,11 +164,34 @@
   // no es ni acierto ni fallo: se sigue escuchando. Lo oído a medias solo vale si no hay ninguna duda.
   // Dos nombres que suenan casi igual (Kingston y Kingstown, Malí y Malé) no se pueden distinguir de oído:
   // si se oye el otro, vale. En las 4 opciones se pide más, porque entre cuatro nombres el más parecido dice menos.
-  const VOZ = { umbral: 0.7, margen: 0.08, temprano: 0.85, otro: 0.8, homofono: 0.88, umbralOpciones: 0.6, margenOpciones: 0.1 };
+  const VOZ = { umbral: 0.7, trozo: 0.8, margen: 0.08, umbralClaro: 0.6, trozoClaro: 0.68, margenClaro: 0.14, temprano: 0.85, otro: 0.8, homofono: 0.87, umbralOpciones: 0.6, margenOpciones: 0.1 };
 
   /** ¿Lo dicho es «no sé», «paso», «ni idea»…? Entonces se pasa la pregunta. */
   const NO_SE = /^(?:no (?:lo )?se|nose|no se cual es|ni idea|no tengo (?:ni )?idea|no tengo ni la mas remota idea|paso|pasar|paso palabra|me rindo|no me acuerdo|no lo recuerdo|no lo se)$/;
   const esNoSe = (alternativas) => alternativas.some((a) => NO_SE.test(sinMuletillas(a)));
+
+  /** «kigalikigalikigali» → «kigali»: el reconocimiento a veces repite una palabra pegada a sí misma. */
+  function sinRepetir(palabra) {
+    for (let n = 3; n <= palabra.length / 2; n++) {
+      const u = palabra.slice(0, n);
+      if (palabra.length % n === 0 && u.repeat(palabra.length / n) === palabra) return u;
+    }
+    return palabra;
+  }
+  /**
+   * Quita del principio de lo oído el nombre que se pregunta («Micronesia paliquir» → «paliquir»): el micrófono
+   * oye la lectura de la pregunta, o el jugador la repite antes de contestar. También «país» o «capital».
+   */
+  function sinEco(texto, preguntado) {
+    let palabras = normalizar(texto).split(" ").filter(Boolean).map(sinRepetir);
+    if (palabras[0] === "pais" || palabras[0] === "capital") palabras = palabras.slice(1);
+    const clave = claveSonora(preguntado);
+    const n = normalizar(preguntado).split(" ").length;
+    for (let k = Math.min(palabras.length, n); k >= 1; k--) {
+      if (parecido(claveSonora(palabras.slice(0, k).join(" ")), clave) >= 0.8) { palabras = palabras.slice(k); break; }
+    }
+    return palabras.join(" ");
+  }
 
   /** Lo dicho entero (sin muletillas) y cómo lo evalúa la corrección normal. Las muletillas solas no cuentan. */
   const preparar = (lista, pregunta) => lista.map((a) => String(a).trim())
@@ -200,9 +224,11 @@
    * Con «temprano» (lo oído aún a medias) solo da un acierto si es inequívoco; si no, { espera: true }.
    */
   function juzgarVoz(alternativas, pregunta, { temprano = false } = {}) {
-    const dichos = preparar(alternativas, pregunta);
-    if (!dichos.length) return temprano ? { espera: true } : { ok: false, vacia: true };
     const { p, dir } = pregunta;
+    // El micrófono suele oír también la pregunta (la lectura, o el propio jugador repitiéndola): se quita
+    const limpias = alternativas.map((a) => (evaluar(a, pregunta, false).ok ? a : sinEco(a, dir === "pc" ? p.pais : p.capital)));
+    const dichos = preparar(limpias, pregunta);
+    if (!dichos.length) return temprano ? { espera: true } : { ok: false, vacia: true };
     const tipo = dir === "pc" ? "capital" : "pais";
     const nombre = dir === "pc" ? p.capital : p.pais;
     const acierto = (d) => ({ ok: true, exacta: true, nombre, texto: d.t });
@@ -227,10 +253,24 @@
         continue;
       }
       const [a, b] = masParecidos(d.entero, tipo);
-      const claro = a.p === p && a.s >= (temprano ? VOZ.temprano : VOZ.umbral) && a.s - (b ? b.s : 0) >= VOZ.margen;
+      // Vale si se parece mucho, o algo menos pero con mucha ventaja sobre el segundo (Astaná ← «hasta»)
+      const ventaja = a.s - (b ? b.s : 0);
+      const claro = a.p === p && (temprano ? a.s >= VOZ.temprano && ventaja >= VOZ.margen
+        : (a.s >= VOZ.umbral && ventaja >= VOZ.margen) || (a.s >= VOZ.umbralClaro && ventaja >= VOZ.margenClaro));
       if (claro && !puedeSeguir) return acierto(d);
     }
     if (temprano) return { espera: true };
+    // 3b. Un trozo de la frase suena claramente a la respuesta («base TR va a setr base terre» → Basseterre).
+    //     Con un listón más alto que la frase entera, porque entre muchos trozos alguno se parece por casualidad.
+    for (const d of dichos) {
+      if (conocido(d)) continue;
+      for (const f of trozos(d.t).slice(1)) {
+        if (claveSonora(f).length < 4 || conocido({ r: evaluar(f, pregunta, false) })) continue;
+        const [a, b] = masParecidos(f, tipo);
+        const ventaja = a.s - (b ? b.s : 0);
+        if (a.p === p && ((a.s >= VOZ.trozo && ventaja >= VOZ.margen) || (a.s >= VOZ.trozoClaro && ventaja >= VOZ.margenClaro))) return acierto(d);
+      }
+    }
     // 4. Fallo: ha dicho otro nombre de la lista (tal cual, dentro de una frase o claramente parecido)
     for (const d of dichos) if (conocido(d)) return { ...d.r, texto: d.t };
     for (const d of dichos) {

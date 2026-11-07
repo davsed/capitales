@@ -30,6 +30,21 @@ test("acepta la respuesta aunque el reconocimiento la escriba a su manera", () =
   assert.ok(oido("KZ", "cp", "Kazajstan").ok);
 });
 
+test("casos reales: el micrófono oye también la pregunta y transcribe a su manera", () => {
+  const casos = [
+    ["FM", "Micronesia paliquir"], ["MM", "Birmania night Guido"], ["TL", "Timor Oriental Billy"],
+    ["TJ", "tayikistán duzan B"], ["LI", "Liechtenstein Badoo badus"], ["NA", "Namibia Windows X"],
+    ["CD", "República Democrática del Congo kingsensa"], ["CM", "Camerún ya onde"], ["KZ", "Kazajistán hasta"],
+    ["RW", "Ruanda kigalikigalikigali"], ["KN", "San Cristóbal y Nieves base TR va a setr base terre"],
+    ["MD", "Moldavia y si no"], ["MV", "Maldivas vale"], ["BF", "Burkina Faso waga dudu"],
+  ];
+  for (const [id, dicho] of casos) assert.ok(oido(id, "pc", dicho).ok, `${pais(id).capital}: «${dicho}»`);
+  // Solo el eco de la pregunta: se sigue escuchando, no es un fallo
+  assert.ok(oido("BB", "pc", "Barbados").vacia);
+  // Otra capital que existe sigue siendo un fallo
+  assert.ok(!oido("LR", "pc", "Trípoli").ok);
+});
+
 test("lo que no se parece claramente a nada no es ni acierto ni fallo: se sigue escuchando", () => {
   for (const dicho of ["zapato rojo", "agua de agua", "mesa"]) {
     const r = oido("BF", "pc", dicho);
